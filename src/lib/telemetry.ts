@@ -114,7 +114,7 @@ const seedEntities: Entity[] = [
   { id: "struct:RELAY-A", label: "Relay A", kind: "structure", threat: 0 },
   // Hostile / unknown
   { id: "trk:GHOST-441", label: "Track 441", kind: "uav-hostile", threat: 0.78, meta: { heading: 187 } },
-  { id: "trk:GHOST-442", label: "Track 442", kind: "uav-hostile", threat: 0.55, meta: { heading: 092 } },
+  { id: "trk:GHOST-442", label: "Track 442", kind: "uav-hostile", threat: 0.55, meta: { heading: 92 } },
   { id: "trk:UNK-118", label: "Unknown 118", kind: "vehicle", threat: 0.41 },
   { id: "trk:UNK-119", label: "Unknown 119", kind: "vehicle", threat: 0.32 },
   { id: "trk:VESSEL-5", label: "Vessel V-5", kind: "vessel", threat: 0.62 },
