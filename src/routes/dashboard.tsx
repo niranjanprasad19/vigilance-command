@@ -28,7 +28,7 @@ export const Route = createFileRoute("/dashboard")({
 
 function Dashboard() {
   const [selected, setSelected] = useState<Entity | null>(null);
-  const [rightTab, setRightTab] = useState<"approvals" | "vanguard" | "tasking">("approvals");
+  const [rightTab, setRightTab] = useState<"approvals" | "dispatch" | "vanguard" | "tasking">("approvals");
 
   useEffect(() => {
     startDecisionEngine();
