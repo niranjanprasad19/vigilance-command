@@ -12,6 +12,7 @@ import { VideoWall } from "@/components/dashboard/VideoWall";
 import { ApprovalQueue } from "@/components/dashboard/ApprovalQueue";
 import { DecisionLog } from "@/components/dashboard/DecisionLog";
 import { DemoInjector } from "@/components/dashboard/DemoInjector";
+import { CommandDispatchFeed } from "@/components/dashboard/CommandDispatchFeed";
 import { startDecisionEngine } from "@/lib/decision-engine";
 import type { Entity } from "@/lib/telemetry";
 
