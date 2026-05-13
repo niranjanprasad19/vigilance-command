@@ -68,6 +68,8 @@ export type TaskingOrder = {
   status: "DISPATCHED" | "ACK" | "ENROUTE" | "ON-STATION" | "COMPLETE";
 };
 
+import type { Decision } from "./threat-levels";
+
 export type TelemetryEventMap = {
   "feed:tick": SensorFeed;
   "entity:upsert": Entity;
@@ -77,6 +79,9 @@ export type TelemetryEventMap = {
   "ghost-track": GhostTrack;
   "tasking:update": TaskingOrder;
   "system:status": { uplink: number; latencyMs: number; nodes: number; alerts: number };
+  "decision:auto": Decision;
+  "decision:pending": Decision;
+  "decision:resolved": Decision;
 };
 
 type Handler<T> = (payload: T) => void;
