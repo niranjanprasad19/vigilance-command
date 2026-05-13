@@ -13,11 +13,14 @@ function entityFor(id: string) {
 }
 
 function autoSideEffect(d: Decision) {
-  // L3 auto-dispatches a UAV to shadow the entity.
   if (d.level === 3) {
     const uavs = ["VG-01", "VG-02", "VG-03", "VG-04"];
     const asset = uavs[Math.floor(Math.random() * uavs.length)];
-    dispatchTasking(asset, `Shadow ${d.entity?.label ?? d.event.entityId}`);
+    dispatchTasking(asset, `Shadow ${d.entity?.label ?? d.event.entityId}`, {
+      source: "AI-AUTO",
+      triggerLevel: d.level,
+      triggerLabel: d.event.label,
+    });
   }
 }
 
@@ -70,7 +73,11 @@ export function resolveDecision(
   if (outcome === "APPROVED" || outcome === "MODIFIED") {
     const uavs = ["VG-01", "VG-02", "VG-03", "VG-04"];
     const asset = uavs[Math.floor(Math.random() * uavs.length)];
-    dispatchTasking(asset, modifiedAction ?? finalDecision.action);
+    dispatchTasking(asset, modifiedAction ?? finalDecision.action, {
+      source: "OPERATOR",
+      triggerLevel: finalDecision.level,
+      triggerLabel: finalDecision.event.label,
+    });
   }
   getBus().emit("decision:resolved", finalDecision);
 }

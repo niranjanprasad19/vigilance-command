@@ -66,6 +66,9 @@ export type TaskingOrder = {
   asset: string;
   directive: string;
   status: "DISPATCHED" | "ACK" | "ENROUTE" | "ON-STATION" | "COMPLETE";
+  source?: "AI-AUTO" | "OPERATOR" | "MANUAL";
+  triggerLevel?: 1 | 2 | 3 | 4 | 5;
+  triggerLabel?: string;
 };
 
 import type { Decision } from "./threat-levels";
@@ -272,10 +275,23 @@ export function getBus(): TelemetryBus {
 }
 
 // Tasking dispatch — mimics socket emit with server ack progression
-export function dispatchTasking(asset: string, directive: string) {
+export function dispatchTasking(
+  asset: string,
+  directive: string,
+  meta?: { source?: TaskingOrder["source"]; triggerLevel?: TaskingOrder["triggerLevel"]; triggerLabel?: string },
+) {
   const bus = getBus();
-  const id = `task-${Date.now()}`;
-  const order: TaskingOrder = { id, ts: Date.now(), asset, directive, status: "DISPATCHED" };
+  const id = `task-${Date.now()}-${Math.floor(Math.random() * 999)}`;
+  const order: TaskingOrder = {
+    id,
+    ts: Date.now(),
+    asset,
+    directive,
+    status: "DISPATCHED",
+    source: meta?.source ?? "MANUAL",
+    triggerLevel: meta?.triggerLevel,
+    triggerLabel: meta?.triggerLabel,
+  };
   bus.emit("tasking:update", order);
   const stages: TaskingOrder["status"][] = ["ACK", "ENROUTE", "ON-STATION", "COMPLETE"];
   stages.forEach((s, i) => {
