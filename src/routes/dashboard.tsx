@@ -67,22 +67,29 @@ function Dashboard() {
         {/* Right rail: tabbed Approvals / Vanguard / Tasking */}
         <aside className="lg:col-span-3 bg-background flex flex-col lg:min-h-0 order-3">
           <div className="flex border-b border-border bg-card/50">
-            {(["approvals", "vanguard", "tasking"] as const).map((t) => (
+            {(["approvals", "dispatch", "vanguard", "tasking"] as const).map((t) => (
               <button
                 key={t}
                 onClick={() => setRightTab(t)}
-                className={`flex-1 py-2 px-2 font-mono text-[10px] uppercase tracking-[0.2em] transition border-b-2 ${
+                className={`flex-1 py-2 px-1.5 font-mono text-[10px] uppercase tracking-[0.18em] transition border-b-2 ${
                   rightTab === t
                     ? "text-cyan border-cyan bg-background"
                     : "text-muted-foreground border-transparent hover:text-foreground"
                 }`}
               >
-                {t === "approvals" ? "Approvals" : t === "vanguard" ? "Vanguard AI" : "Tasking"}
+                {t === "approvals"
+                  ? "Approvals"
+                  : t === "dispatch"
+                    ? "Dispatch"
+                    : t === "vanguard"
+                      ? "Vanguard"
+                      : "Tasking"}
               </button>
             ))}
           </div>
           <div className="flex-1 lg:min-h-0 min-h-[420px]">
             {rightTab === "approvals" && <ApprovalQueue />}
+            {rightTab === "dispatch" && <CommandDispatchFeed />}
             {rightTab === "vanguard" && <VanguardConsole />}
             {rightTab === "tasking" && <TaskingConsole />}
           </div>
