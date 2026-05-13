@@ -10,10 +10,10 @@ export function DecisionLog() {
   useEffect(() => {
     const bus = getBus();
     const a = bus.on("decision:auto", (d) =>
-      setLog((l) => [{ ...d, kind: "AUTO" }, ...l].slice(0, 60)),
+      setLog((l) => [{ ...d, kind: "AUTO" as const }, ...l].slice(0, 60)),
     );
     const r = bus.on("decision:resolved", (d) =>
-      setLog((l) => [{ ...d, kind: "RESOLVED" }, ...l].slice(0, 60)),
+      setLog((l) => [{ ...d, kind: "RESOLVED" as const }, ...l].slice(0, 60)),
     );
     return () => { a(); r(); };
   }, []);
