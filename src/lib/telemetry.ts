@@ -66,6 +66,9 @@ export type TaskingOrder = {
   asset: string;
   directive: string;
   status: "DISPATCHED" | "ACK" | "ENROUTE" | "ON-STATION" | "COMPLETE";
+  source?: "AI-AUTO" | "OPERATOR" | "MANUAL";
+  triggerLevel?: 1 | 2 | 3 | 4 | 5;
+  triggerLabel?: string;
 };
 
 import type { Decision } from "./threat-levels";
