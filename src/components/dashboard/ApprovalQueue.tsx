@@ -141,29 +141,51 @@ export function ApprovalQueue() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-3 gap-1.5 pt-1">
-                  <button
-                    onClick={() => handleApprove(d)}
-                    className="flex items-center justify-center gap-1 py-1.5 border border-cyan text-cyan hover:bg-cyan hover:text-primary-foreground transition font-mono text-[10px] uppercase tracking-wider"
-                  >
-                    <Check className="w-3 h-3" />
-                    {awaitingDual ? "Confirm" : "Approve"}
-                  </button>
-                  <button
-                    onClick={() => handleModify(d)}
-                    className="flex items-center justify-center gap-1 py-1.5 border border-warning text-warning hover:bg-warning hover:text-primary-foreground transition font-mono text-[10px] uppercase tracking-wider"
-                  >
-                    <Edit3 className="w-3 h-3" />
-                    {editingId === d.id ? "Save" : "Modify"}
-                  </button>
-                  <button
-                    onClick={() => handleReject(d)}
-                    className="flex items-center justify-center gap-1 py-1.5 border border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground transition font-mono text-[10px] uppercase tracking-wider"
-                  >
-                    <X className="w-3 h-3" />
-                    Reject
-                  </button>
-                </div>
+                {(() => {
+                  const ap = ops.canActOn(d, "approve");
+                  const md = ops.canActOn(d, "modify");
+                  const rj = ops.canActOn(d, "reject");
+                  const denied = !ap.allowed && !md.allowed && !rj.allowed;
+                  return (
+                    <>
+                      {denied && (
+                        <div className="font-mono text-[9px] text-muted-foreground border border-border px-2 py-1 flex items-center gap-1">
+                          <Lock className="w-2.5 h-2.5" />
+                          {ROLE_META[ops.role].label} is read-only for this decision.
+                        </div>
+                      )}
+                      <div className="grid grid-cols-3 gap-1.5 pt-1">
+                        <button
+                          onClick={() => handleApprove(d)}
+                          disabled={!ap.allowed}
+                          title={ap.reason}
+                          className="flex items-center justify-center gap-1 py-1.5 border border-cyan text-cyan hover:bg-cyan hover:text-primary-foreground transition font-mono text-[10px] uppercase tracking-wider disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-cyan"
+                        >
+                          <Check className="w-3 h-3" />
+                          {awaitingDual ? "Confirm" : "Approve"}
+                        </button>
+                        <button
+                          onClick={() => handleModify(d)}
+                          disabled={!md.allowed}
+                          title={md.reason}
+                          className="flex items-center justify-center gap-1 py-1.5 border border-warning text-warning hover:bg-warning hover:text-primary-foreground transition font-mono text-[10px] uppercase tracking-wider disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-warning"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                          {editingId === d.id ? "Save" : "Modify"}
+                        </button>
+                        <button
+                          onClick={() => handleReject(d)}
+                          disabled={!rj.allowed}
+                          title={rj.reason}
+                          className="flex items-center justify-center gap-1 py-1.5 border border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground transition font-mono text-[10px] uppercase tracking-wider disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-destructive"
+                        >
+                          <X className="w-3 h-3" />
+                          Reject
+                        </button>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </div>
           );
