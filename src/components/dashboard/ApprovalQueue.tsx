@@ -7,6 +7,7 @@ import { useOps } from "@/lib/ops-context";
 import { ROLE_META } from "@/lib/rbac";
 
 export function ApprovalQueue() {
+  const ops = useOps();
   const [queue, setQueue] = useState<Decision[]>([]);
   const [now, setNow] = useState(Date.now());
   const [editingId, setEditingId] = useState<string | null>(null);
