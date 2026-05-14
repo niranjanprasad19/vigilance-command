@@ -18,7 +18,10 @@ export function OpsBar() {
   const [confirmLive, setConfirmLive] = useState(false);
   const [active, setActive] = useState<ReadonlySet<DegradedMode>>(() => getActiveDegraded());
 
-  useEffect(() => subscribeDegraded((s) => setActive(new Set(s))), []);
+  useEffect(() => {
+    const off = subscribeDegraded((s) => setActive(new Set(s)));
+    return () => { off(); };
+  }, []);
 
   const liveAllowed = can("ops.toggle_mode");
   const degAllowed = can("ops.toggle_degraded");
