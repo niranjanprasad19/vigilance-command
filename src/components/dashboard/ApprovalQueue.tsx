@@ -30,6 +30,7 @@ export function ApprovalQueue() {
   }, []);
 
   const handleApprove = (d: Decision) => {
+    if (!ops.canActOn(d, "approve").allowed) return;
     if (d.level === 5 && !confirmL5.has(d.id)) {
       setConfirmL5((s) => new Set(s).add(d.id));
       return;
@@ -37,6 +38,7 @@ export function ApprovalQueue() {
     resolveDecision(d.id, "APPROVED");
   };
   const handleModify = (d: Decision) => {
+    if (!ops.canActOn(d, "modify").allowed) return;
     if (editingId === d.id) {
       resolveDecision(d.id, "MODIFIED", editValue.trim() || d.action);
       setEditingId(null);
@@ -45,7 +47,10 @@ export function ApprovalQueue() {
       setEditValue(d.action);
     }
   };
-  const handleReject = (d: Decision) => resolveDecision(d.id, "REJECTED");
+  const handleReject = (d: Decision) => {
+    if (!ops.canActOn(d, "reject").allowed) return;
+    resolveDecision(d.id, "REJECTED");
+  };
 
   return (
     <div className="bg-card flex flex-col h-full">
