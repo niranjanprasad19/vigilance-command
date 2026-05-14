@@ -81,7 +81,7 @@ export function resolveDecision(
   if (outcome === "APPROVED" || outcome === "MODIFIED") {
     const uavs = ["VG-01", "VG-02", "VG-03", "VG-04"];
     const asset = uavs[Math.floor(Math.random() * uavs.length)];
-    dispatchTasking(asset, modifiedAction ?? finalDecision.action, {
+    dispatchTasking(asset, modeTag(modifiedAction ?? finalDecision.action), {
       source: "OPERATOR",
       triggerLevel: finalDecision.level,
       triggerLabel: finalDecision.event.label,
