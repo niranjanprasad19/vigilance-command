@@ -38,9 +38,10 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
   const [role, setRoleState] = useState<Role>(initial.role);
   const [mode, setModeState] = useState<OpsMode>(initial.mode);
 
-  // Keep audit-log in sync with current actor + mode (closed-over via getters).
+  // Keep audit-log + ops-runtime in sync with current actor + mode.
   useEffect(() => {
     configureAudit({ mode: () => mode, actor: () => role });
+    setOpsRuntime(mode, role);
     startAuditCapture();
   }, [mode, role]);
 
