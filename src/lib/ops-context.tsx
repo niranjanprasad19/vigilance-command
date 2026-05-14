@@ -6,6 +6,7 @@ import { appendAudit, configureAudit, startAuditCapture } from "./audit-log";
 import type { Capability, Role } from "./rbac";
 import { can, canActOn } from "./rbac";
 import type { Decision } from "./threat-levels";
+import { setOpsRuntime } from "./ops-runtime";
 
 export type OpsMode = "TRAINING" | "LIVE";
 
