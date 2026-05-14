@@ -33,7 +33,9 @@ function autoSideEffect(d: Decision) {
 function handleEvent(e: ThreatEvent) {
   // Don't act on predicted events — only on live threats.
   if (e.predicted) return;
-  const decision = classify(e, entityFor(e.entityId));
+  // AI-degraded mode: cap confidence so the classifier escalates more events to humans.
+  const evt: ThreatEvent = isAiDegraded() ? { ...e, confidence: Math.min(e.confidence, 0.6) } : e;
+  const decision = classify(evt, entityFor(evt.entityId));
   const bus = getBus();
 
   if (decision.autoExecute) {
