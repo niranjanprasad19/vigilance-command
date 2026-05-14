@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { Beaker, ChevronDown, ChevronUp } from "lucide-react";
+import { Beaker, ChevronDown, ChevronUp, Lock } from "lucide-react";
 import { injectScenario, type ScenarioKey } from "@/lib/decision-engine";
+import { useOps } from "@/lib/ops-context";
+import { appendAudit } from "@/lib/audit-log";
 
 const SCENARIOS: { key: ScenarioKey; label: string; level: string; tone: string }[] = [
   { key: "rf", label: "RF Anomaly", level: "L2", tone: "border-cyan/60 text-cyan" },
