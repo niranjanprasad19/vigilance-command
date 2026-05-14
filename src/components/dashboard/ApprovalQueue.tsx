@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, Edit3, X, Shield, Clock } from "lucide-react";
+import { Check, Edit3, X, Shield, Clock, Lock } from "lucide-react";
 import { getBus } from "@/lib/telemetry";
 import { resolveDecision } from "@/lib/decision-engine";
 import { LEVEL_META, type Decision } from "@/lib/threat-levels";
+import { useOps } from "@/lib/ops-context";
+import { ROLE_META } from "@/lib/rbac";
 
 export function ApprovalQueue() {
   const [queue, setQueue] = useState<Decision[]>([]);
