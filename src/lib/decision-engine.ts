@@ -3,6 +3,8 @@
 
 import { dispatchTasking, getBus, scenario, type ThreatEvent } from "./telemetry";
 import { classify, type Decision, type ThreatLevel } from "./threat-levels";
+import { getOpsMode } from "./ops-runtime";
+import { isAiDegraded } from "./degraded";
 
 const PENDING_TIMEOUT_MS = 30_000;
 let started = false;
@@ -12,11 +14,15 @@ function entityFor(id: string) {
   return scenario.entities.find((e) => e.id === id);
 }
 
+function modeTag(prefix: string) {
+  return getOpsMode() === "TRAINING" ? `[REHEARSAL] ${prefix}` : prefix;
+}
+
 function autoSideEffect(d: Decision) {
   if (d.level === 3) {
     const uavs = ["VG-01", "VG-02", "VG-03", "VG-04"];
     const asset = uavs[Math.floor(Math.random() * uavs.length)];
-    dispatchTasking(asset, `Shadow ${d.entity?.label ?? d.event.entityId}`, {
+    dispatchTasking(asset, modeTag(`Shadow ${d.entity?.label ?? d.event.entityId}`), {
       source: "AI-AUTO",
       triggerLevel: d.level,
       triggerLabel: d.event.label,
