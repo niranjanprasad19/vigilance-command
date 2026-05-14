@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { Beaker, ChevronDown, ChevronUp } from "lucide-react";
+import { Beaker, ChevronDown, ChevronUp, Lock } from "lucide-react";
 import { injectScenario, type ScenarioKey } from "@/lib/decision-engine";
+import { useOps } from "@/lib/ops-context";
+import { appendAudit } from "@/lib/audit-log";
 
 const SCENARIOS: { key: ScenarioKey; label: string; level: string; tone: string }[] = [
   { key: "rf", label: "RF Anomaly", level: "L2", tone: "border-cyan/60 text-cyan" },
@@ -11,6 +13,8 @@ const SCENARIOS: { key: ScenarioKey; label: string; level: string; tone: string 
 
 export function DemoInjector() {
   const [open, setOpen] = useState(true);
+  const { can } = useOps();
+  const allowed = can("ops.inject_scenario");
 
   return (
     <div className="fixed bottom-4 right-4 z-40 bg-card/95 backdrop-blur-md border border-border shadow-2xl">
@@ -29,10 +33,17 @@ export function DemoInjector() {
           {SCENARIOS.map((s) => (
             <button
               key={s.key}
-              onClick={() => injectScenario(s.key)}
-              className={`px-2 py-2 border ${s.tone} hover:bg-current/10 transition text-left`}
+              disabled={!allowed}
+              onClick={() => {
+                appendAudit("INJECT_SCENARIO", { key: s.key, level: s.level });
+                injectScenario(s.key);
+              }}
+              className={`px-2 py-2 border ${s.tone} hover:bg-current/10 transition text-left disabled:opacity-40 disabled:cursor-not-allowed`}
             >
-              <div className="font-mono text-[9px] opacity-70">{s.level}</div>
+              <div className="font-mono text-[9px] opacity-70 flex items-center gap-1">
+                {!allowed && <Lock className="w-2.5 h-2.5" />}
+                {s.level}
+              </div>
               <div className="font-mono text-[10px] uppercase tracking-wider">{s.label}</div>
             </button>
           ))}

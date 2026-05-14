@@ -3,6 +3,8 @@
 
 import { dispatchTasking, getBus, scenario, type ThreatEvent } from "./telemetry";
 import { classify, type Decision, type ThreatLevel } from "./threat-levels";
+import { getOpsMode } from "./ops-runtime";
+import { isAiDegraded } from "./degraded";
 
 const PENDING_TIMEOUT_MS = 30_000;
 let started = false;
@@ -12,11 +14,15 @@ function entityFor(id: string) {
   return scenario.entities.find((e) => e.id === id);
 }
 
+function modeTag(prefix: string) {
+  return getOpsMode() === "TRAINING" ? `[REHEARSAL] ${prefix}` : prefix;
+}
+
 function autoSideEffect(d: Decision) {
   if (d.level === 3) {
     const uavs = ["VG-01", "VG-02", "VG-03", "VG-04"];
     const asset = uavs[Math.floor(Math.random() * uavs.length)];
-    dispatchTasking(asset, `Shadow ${d.entity?.label ?? d.event.entityId}`, {
+    dispatchTasking(asset, modeTag(`Shadow ${d.entity?.label ?? d.event.entityId}`), {
       source: "AI-AUTO",
       triggerLevel: d.level,
       triggerLabel: d.event.label,
@@ -27,7 +33,9 @@ function autoSideEffect(d: Decision) {
 function handleEvent(e: ThreatEvent) {
   // Don't act on predicted events — only on live threats.
   if (e.predicted) return;
-  const decision = classify(e, entityFor(e.entityId));
+  // AI-degraded mode: cap confidence so the classifier escalates more events to humans.
+  const evt: ThreatEvent = isAiDegraded() ? { ...e, confidence: Math.min(e.confidence, 0.6) } : e;
+  const decision = classify(evt, entityFor(evt.entityId));
   const bus = getBus();
 
   if (decision.autoExecute) {
@@ -73,7 +81,7 @@ export function resolveDecision(
   if (outcome === "APPROVED" || outcome === "MODIFIED") {
     const uavs = ["VG-01", "VG-02", "VG-03", "VG-04"];
     const asset = uavs[Math.floor(Math.random() * uavs.length)];
-    dispatchTasking(asset, modifiedAction ?? finalDecision.action, {
+    dispatchTasking(asset, modeTag(modifiedAction ?? finalDecision.action), {
       source: "OPERATOR",
       triggerLevel: finalDecision.level,
       triggerLabel: finalDecision.event.label,
