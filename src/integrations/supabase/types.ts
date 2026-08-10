@@ -14,16 +14,328 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      audit_entries: {
+        Row: {
+          actor_id: string | null
+          actor_role: Database["public"]["Enums"]["app_role"] | null
+          classification: Database["public"]["Enums"]["classification"]
+          hash: string
+          kind: string
+          mode: Database["public"]["Enums"]["ops_mode"]
+          payload: Json
+          prev_hash: string
+          seq: number
+          ts: string
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_role?: Database["public"]["Enums"]["app_role"] | null
+          classification?: Database["public"]["Enums"]["classification"]
+          hash: string
+          kind: string
+          mode?: Database["public"]["Enums"]["ops_mode"]
+          payload?: Json
+          prev_hash: string
+          seq?: never
+          ts?: string
+        }
+        Update: {
+          actor_id?: string | null
+          actor_role?: Database["public"]["Enums"]["app_role"] | null
+          classification?: Database["public"]["Enums"]["classification"]
+          hash?: string
+          kind?: string
+          mode?: Database["public"]["Enums"]["ops_mode"]
+          payload?: Json
+          prev_hash?: string
+          seq?: never
+          ts?: string
+        }
+        Relationships: []
+      }
+      decision_approvals: {
+        Row: {
+          actor_role: Database["public"]["Enums"]["app_role"]
+          created_at: string
+          decision_id: string
+          id: string
+          modified_action: string | null
+          outcome: string
+          user_id: string
+        }
+        Insert: {
+          actor_role: Database["public"]["Enums"]["app_role"]
+          created_at?: string
+          decision_id: string
+          id?: string
+          modified_action?: string | null
+          outcome: string
+          user_id: string
+        }
+        Update: {
+          actor_role?: Database["public"]["Enums"]["app_role"]
+          created_at?: string
+          decision_id?: string
+          id?: string
+          modified_action?: string | null
+          outcome?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decision_approvals_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "decisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      decisions: {
+        Row: {
+          action: string
+          auto_execute: boolean
+          classification: Database["public"]["Enums"]["classification"]
+          confidence: number | null
+          created_at: string
+          created_by: string | null
+          entity_id: string | null
+          entity_label: string | null
+          event_id: string
+          id: string
+          level: number
+          mode: Database["public"]["Enums"]["ops_mode"]
+          model_version: string
+          modified_action: string | null
+          policy_version: number | null
+          rationale: string
+          resolved_at: string | null
+          score: number | null
+          severity: string | null
+          status: string
+        }
+        Insert: {
+          action: string
+          auto_execute?: boolean
+          classification?: Database["public"]["Enums"]["classification"]
+          confidence?: number | null
+          created_at?: string
+          created_by?: string | null
+          entity_id?: string | null
+          entity_label?: string | null
+          event_id: string
+          id?: string
+          level: number
+          mode?: Database["public"]["Enums"]["ops_mode"]
+          model_version?: string
+          modified_action?: string | null
+          policy_version?: number | null
+          rationale: string
+          resolved_at?: string | null
+          score?: number | null
+          severity?: string | null
+          status?: string
+        }
+        Update: {
+          action?: string
+          auto_execute?: boolean
+          classification?: Database["public"]["Enums"]["classification"]
+          confidence?: number | null
+          created_at?: string
+          created_by?: string | null
+          entity_id?: string | null
+          entity_label?: string | null
+          event_id?: string
+          id?: string
+          level?: number
+          mode?: Database["public"]["Enums"]["ops_mode"]
+          model_version?: string
+          modified_action?: string | null
+          policy_version?: number | null
+          rationale?: string
+          resolved_at?: string | null
+          score?: number | null
+          severity?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          callsign: string
+          created_at: string
+          id: string
+          unit: string | null
+        }
+        Insert: {
+          callsign: string
+          created_at?: string
+          id: string
+          unit?: string | null
+        }
+        Update: {
+          callsign?: string
+          created_at?: string
+          id?: string
+          unit?: string | null
+        }
+        Relationships: []
+      }
+      roe_policies: {
+        Row: {
+          active: boolean
+          approved_by: string | null
+          auto_execute_ceiling: number
+          created_at: string
+          created_by: string | null
+          dual_confirm_from: number
+          id: string
+          name: string
+          thresholds: Json
+          version: number
+        }
+        Insert: {
+          active?: boolean
+          approved_by?: string | null
+          auto_execute_ceiling?: number
+          created_at?: string
+          created_by?: string | null
+          dual_confirm_from?: number
+          id?: string
+          name: string
+          thresholds: Json
+          version: number
+        }
+        Update: {
+          active?: boolean
+          approved_by?: string | null
+          auto_execute_ceiling?: number
+          created_at?: string
+          created_by?: string | null
+          dual_confirm_from?: number
+          id?: string
+          name?: string
+          thresholds?: Json
+          version?: number
+        }
+        Relationships: []
+      }
+      tasking_orders: {
+        Row: {
+          asset: string
+          classification: Database["public"]["Enums"]["classification"]
+          created_at: string
+          decision_id: string | null
+          directive: string
+          id: string
+          issued_by: string | null
+          mode: Database["public"]["Enums"]["ops_mode"]
+          source: string
+          status: string
+          trigger_label: string | null
+          trigger_level: number | null
+        }
+        Insert: {
+          asset: string
+          classification?: Database["public"]["Enums"]["classification"]
+          created_at?: string
+          decision_id?: string | null
+          directive: string
+          id?: string
+          issued_by?: string | null
+          mode?: Database["public"]["Enums"]["ops_mode"]
+          source: string
+          status?: string
+          trigger_label?: string | null
+          trigger_level?: number | null
+        }
+        Update: {
+          asset?: string
+          classification?: Database["public"]["Enums"]["classification"]
+          created_at?: string
+          decision_id?: string | null
+          directive?: string
+          id?: string
+          issued_by?: string | null
+          mode?: Database["public"]["Enums"]["ops_mode"]
+          source?: string
+          status?: string
+          trigger_label?: string | null
+          trigger_level?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasking_orders_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "decisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          granted_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          granted_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          granted_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      append_audit: {
+        Args: {
+          _classification?: Database["public"]["Enums"]["classification"]
+          _kind: string
+          _mode?: Database["public"]["Enums"]["ops_mode"]
+          _payload?: Json
+        }
+        Returns: {
+          hash: string
+          seq: number
+          ts: string
+        }[]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      highest_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      verify_audit_chain: {
+        Args: never
+        Returns: {
+          broken_at: number
+          ok: boolean
+          total: number
+        }[]
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "operator" | "supervisor" | "commander" | "auditor"
+      classification: "UNCLASSIFIED" | "RESTRICTED" | "CONFIDENTIAL" | "SECRET"
+      ops_mode: "TRAINING" | "LIVE"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +462,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["operator", "supervisor", "commander", "auditor"],
+      classification: ["UNCLASSIFIED", "RESTRICTED", "CONFIDENTIAL", "SECRET"],
+      ops_mode: ["TRAINING", "LIVE"],
+    },
   },
 } as const
