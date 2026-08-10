@@ -5,6 +5,7 @@ import { dispatchTasking, getBus, scenario, type ThreatEvent } from "./telemetry
 import { classify, type Decision, type ThreatLevel } from "./threat-levels";
 import { getOpsMode } from "./ops-runtime";
 import { isAiDegraded } from "./degraded";
+import { resolveDecisionServer } from "./ops.functions";
 
 const PENDING_TIMEOUT_MS = 30_000;
 let started = false;
