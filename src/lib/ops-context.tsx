@@ -1,76 +1,97 @@
-// Global operations context: role (RBAC), mode (TRAINING vs LIVE), and degraded state.
-// Wires the audit log to the current actor + mode.
+// Global operations context.
+// Role and callsign are ISSUED BY THE SERVER (user_roles table) and are read-only
+// in the browser. Mode (TRAINING vs LIVE) is a client control, but every change is
+// written to the server-side tamper-evident journal.
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { appendAudit, configureAudit, startAuditCapture } from "./audit-log";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { supabase } from "@/integrations/supabase/client";
+import { configureAudit, appendAudit, startAuditCapture } from "./audit-log";
 import type { Capability, Role } from "./rbac";
 import { can, canActOn } from "./rbac";
 import type { Decision } from "./threat-levels";
 import { setOpsRuntime } from "./ops-runtime";
+import { getMySession } from "./ops.functions";
 
 export type OpsMode = "TRAINING" | "LIVE";
 
 type Ctx = {
   role: Role;
+  roles: Role[];
+  callsign: string;
+  unit: string | null;
+  userId: string | null;
+  loading: boolean;
   mode: OpsMode;
-  setRole: (r: Role) => void;
   setMode: (m: OpsMode) => void;
+  signOut: () => Promise<void>;
   can: (cap: Capability) => boolean;
   canActOn: (d: Pick<Decision, "level">, a: "approve" | "modify" | "reject") => { allowed: boolean; reason?: string };
 };
 
 const OpsContext = createContext<Ctx | null>(null);
 
-const STORAGE = "vigilance.ops";
-type Persisted = { role: Role; mode: OpsMode };
+const STORAGE = "vigilance.mode";
 
-function loadPersisted(): Persisted {
-  if (typeof window === "undefined") return { role: "operator", mode: "TRAINING" };
-  try {
-    const raw = localStorage.getItem(STORAGE);
-    if (raw) return JSON.parse(raw) as Persisted;
-  } catch { /* ignore */ }
-  return { role: "operator", mode: "TRAINING" };
+function loadMode(): OpsMode {
+  if (typeof window === "undefined") return "TRAINING";
+  return localStorage.getItem(STORAGE) === "LIVE" ? "LIVE" : "TRAINING";
 }
 
 export function OpsProvider({ children }: { children: React.ReactNode }) {
-  const initial = loadPersisted();
-  const [role, setRoleState] = useState<Role>(initial.role);
-  const [mode, setModeState] = useState<OpsMode>(initial.mode);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const fetchSession = useServerFn(getMySession);
+  const [mode, setModeState] = useState<OpsMode>(loadMode);
 
-  // Keep audit-log + ops-runtime in sync with current actor + mode.
+  const { data, isLoading } = useQuery({
+    queryKey: ["ops-session"],
+    queryFn: () => fetchSession(),
+    staleTime: 60_000,
+  });
+
+  const role = (data?.role ?? "operator") as Role;
+  const roles = (data?.roles ?? []) as Role[];
+
   useEffect(() => {
     configureAudit({ mode: () => mode, actor: () => role });
     setOpsRuntime(mode, role);
     startAuditCapture();
   }, [mode, role]);
 
-  // Persist
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem(STORAGE, JSON.stringify({ role, mode }));
-    }
-  }, [role, mode]);
-
-  const setRole = useCallback((r: Role) => {
-    setRoleState((prev) => {
-      if (prev !== r) appendAudit("ROLE_CHANGE", { from: prev, to: r }, "system");
-      return r;
-    });
-  }, []);
+    if (typeof window !== "undefined") localStorage.setItem(STORAGE, mode);
+  }, [mode]);
 
   const setMode = useCallback((m: OpsMode) => {
     setModeState((prev) => {
-      if (prev !== m) appendAudit("MODE_CHANGE", { from: prev, to: m });
+      if (prev !== m) void appendAudit("MODE_CHANGE", { from: prev, to: m }, m, "CONFIDENTIAL");
       return m;
     });
   }, []);
 
+  const signOut = useCallback(async () => {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true, search: { redirect: "/dashboard" } });
+  }, [navigate, queryClient]);
+
   const value = useMemo<Ctx>(() => ({
-    role, mode, setRole, setMode,
+    role,
+    roles,
+    callsign: data?.callsign ?? "—",
+    unit: data?.unit ?? null,
+    userId: data?.userId ?? null,
+    loading: isLoading,
+    mode,
+    setMode,
+    signOut,
     can: (cap) => can(role, cap),
     canActOn: (d, a) => canActOn(role, d, a),
-  }), [role, mode, setRole, setMode]);
+  }), [role, roles, data, isLoading, mode, setMode, signOut]);
 
   return <OpsContext.Provider value={value}>{children}</OpsContext.Provider>;
 }
