@@ -47,7 +47,7 @@ export const writeAudit = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { error, data: rows } = await context.supabase.rpc("append_audit", {
       _kind: data.kind,
-      _payload: data.payload,
+      _payload: data.payload as never,
       _mode: data.mode,
       _classification: data.classification ?? "RESTRICTED",
     });
