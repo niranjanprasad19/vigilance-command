@@ -61,23 +61,63 @@ export function startDecisionEngine() {
   getBus().on("threat:event", handleEvent);
 }
 
-export function resolveDecision(
+export type ResolveResult =
+  | { ok: true; finalized: true }
+  | { ok: true; finalized: false; keysHeld: number; keysRequired: number }
+  | { ok: false; reason: string };
+
+/**
+ * Resolution is SERVER-AUTHORITATIVE. The browser only proposes an outcome:
+ * role authority, threat-level ceiling and the two-commander rule for L5 are
+ * all re-evaluated on the server against the bearer token before anything is
+ * persisted or dispatched.
+ */
+export async function resolveDecision(
   id: string,
   outcome: "APPROVED" | "MODIFIED" | "REJECTED",
   modifiedAction?: string,
-) {
+): Promise<ResolveResult> {
   const cur = pending.get(id);
-  if (!cur) return;
+  if (!cur) return { ok: false, reason: "Decision is no longer pending" };
+  const d = cur.decision;
+
+  let res: Awaited<ReturnType<typeof resolveDecisionServer>>;
+  try {
+    res = await resolveDecisionServer({
+      data: {
+        eventId: d.id,
+        entityId: d.event.entityId,
+        entityLabel: d.entity?.label,
+        level: d.level,
+        action: d.action,
+        rationale: d.rationale,
+        confidence: d.event.confidence,
+        severity: d.event.severity,
+        modelVersion: "vigilance-triage-1.0.0",
+        mode: getOpsMode(),
+        outcome,
+        modifiedAction: outcome === "MODIFIED" ? modifiedAction : undefined,
+      },
+    });
+  } catch (e) {
+    console.error(e);
+    return { ok: false, reason: "Server rejected the request" };
+  }
+
+  if (!res.ok) return { ok: false, reason: res.reason ?? "Denied" };
+  if (!res.finalized) {
+    return { ok: true, finalized: false, keysHeld: res.keysHeld ?? 1, keysRequired: res.keysRequired ?? 2 };
+  }
+
   clearTimeout(cur.timer);
   pending.delete(id);
   const finalDecision: Decision = {
-    ...cur.decision,
+    ...d,
     status: outcome,
     resolvedBy: "operator",
     resolvedTs: Date.now(),
     modifiedAction: outcome === "MODIFIED" ? modifiedAction : undefined,
   };
-  // Side effect on approval: dispatch the recommended (or modified) directive.
   if (outcome === "APPROVED" || outcome === "MODIFIED") {
     const uavs = ["VG-01", "VG-02", "VG-03", "VG-04"];
     const asset = uavs[Math.floor(Math.random() * uavs.length)];
@@ -88,6 +128,7 @@ export function resolveDecision(
     });
   }
   getBus().emit("decision:resolved", finalDecision);
+  return { ok: true, finalized: true };
 }
 
 // Demo injectors — fire scripted threats at desired levels.
