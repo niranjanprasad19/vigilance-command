@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
-import { ShieldCheck, Lock, GraduationCap, Radio, AlertOctagon, Wifi, Satellite, BrainCircuit } from "lucide-react";
+import { ShieldCheck, Lock, GraduationCap, Radio, AlertOctagon, Wifi, Satellite, BrainCircuit, LogOut, User } from "lucide-react";
 import { useOps } from "@/lib/ops-context";
-import { ROLE_META, type Role } from "@/lib/rbac";
+import { ROLE_META } from "@/lib/rbac";
 import { DEGRADED_META, type DegradedMode, getActiveDegraded, setDegraded, subscribeDegraded } from "@/lib/degraded";
-
-const ROLE_ORDER: Role[] = ["operator", "supervisor", "commander", "auditor"];
 
 const DEG_ICON: Record<DegradedMode, React.ReactNode> = {
   "sensor-drop": <Radio className="w-3 h-3" />,
@@ -14,7 +12,7 @@ const DEG_ICON: Record<DegradedMode, React.ReactNode> = {
 };
 
 export function OpsBar() {
-  const { role, mode, setRole, setMode, can } = useOps();
+  const { role, callsign, unit, mode, setMode, can, signOut, loading } = useOps();
   const [confirmLive, setConfirmLive] = useState(false);
   const [active, setActive] = useState<ReadonlySet<DegradedMode>>(() => getActiveDegraded());
 
@@ -55,23 +53,16 @@ export function OpsBar() {
 
       <div className="h-4 w-px bg-border hidden md:block" />
 
-      {/* Role */}
-      <div className="flex items-center gap-1">
+      {/* Identity — issued by the server, not selectable */}
+      <div className="flex items-center gap-1.5" title="Role is issued by the operations server and cannot be changed from this console.">
         <ShieldCheck className="w-3 h-3 text-cyan" />
-        <span className="text-muted-foreground hidden sm:inline">Role</span>
-        {ROLE_ORDER.map((r) => (
-          <button
-            key={r}
-            onClick={() => setRole(r)}
-            className={`px-1.5 py-0.5 border transition ${
-              role === r
-                ? `${ROLE_META[r].tone} border-current bg-current/10`
-                : "text-muted-foreground border-border hover:text-foreground"
-            }`}
-          >
-            {ROLE_META[r].label}
-          </button>
-        ))}
+        <span className={`px-1.5 py-0.5 border border-current ${ROLE_META[role].tone} bg-current/10`}>
+          {loading ? "…" : ROLE_META[role].label}
+        </span>
+        <span className="flex items-center gap-1 text-muted-foreground normal-case tracking-normal">
+          <User className="w-3 h-3" />
+          {callsign}{unit ? ` · ${unit}` : ""}
+        </span>
       </div>
 
       <div className="h-4 w-px bg-border hidden md:block" />
@@ -100,11 +91,19 @@ export function OpsBar() {
         })}
       </div>
 
-      {mode === "TRAINING" && (
-        <div className="ml-auto px-2 py-0.5 border border-cyan/40 text-cyan/80 text-[9px]">
-          REHEARSAL · no live weapons release
-        </div>
-      )}
+      <div className="ml-auto flex items-center gap-2">
+        {mode === "TRAINING" && (
+          <div className="px-2 py-0.5 border border-cyan/40 text-cyan/80 text-[9px]">
+            REHEARSAL · no live weapons release
+          </div>
+        )}
+        <button
+          onClick={() => void signOut()}
+          className="flex items-center gap-1 px-2 py-0.5 border border-border text-muted-foreground hover:text-destructive hover:border-destructive transition"
+        >
+          <LogOut className="w-3 h-3" /> Sign out
+        </button>
+      </div>
     </div>
   );
 }
