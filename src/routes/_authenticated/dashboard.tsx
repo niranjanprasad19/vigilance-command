@@ -19,7 +19,7 @@ import { startDecisionEngine } from "@/lib/decision-engine";
 import { OpsProvider, useOps } from "@/lib/ops-context";
 import type { Entity } from "@/lib/telemetry";
 
-export const Route = createFileRoute("/dashboard")({
+export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
       { title: "Vigilance · Command Console" },

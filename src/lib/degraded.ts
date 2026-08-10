@@ -41,7 +41,7 @@ export function setDegraded(m: DegradedMode, on: boolean) {
     intervals.delete(m);
     if (m === "sensor-drop") restoreFeeds();
   }
-  appendAudit("DEGRADED_TOGGLE", { mode: m, on }, "system");
+  void appendAudit("DEGRADED_TOGGLE", { degraded_mode: m, on });
   notify();
 }
 

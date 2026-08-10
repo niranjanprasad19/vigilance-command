@@ -1,0 +1,1 @@
+alter table public.decisions add constraint decisions_event_id_key unique (event_id);
