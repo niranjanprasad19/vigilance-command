@@ -1,68 +1,67 @@
+# Vigilance — Status Review and Hardening Roadmap
 
-# Threat Triage Demo — 5-Level AI/Human Decisioning
+## Where the project stands today
 
-Add a demo-ready capability showing how Vigilance classifies every threat into 5 escalating levels, auto-acts on L1–L3 with the AI, and routes L4–L5 to a human approval queue (with AI recommendation pre-attached). Built on existing telemetry — no backend changes beyond the AI route.
+Everything currently in the app is **client-side simulation**. There is no database, no user accounts, and no server-side authority. Confirmed from the code:
 
-## What you'll see in the demo
+Built and working:
+- Marketing landing page (hero, ticker, stats, capabilities, workflow, architecture, FAQ, CTA, footer).
+- Command dashboard: sensor feeds, multi-spectral video wall (EO/IR/NV/SAR canvas feeds with bounding boxes), Nexus knowledge graph with filters/minimap/ghost tracks, Chronos timeline, status strip.
+- 5-level threat classifier (`src/lib/threat-levels.ts`) with L1–L3 auto-execute and L4–L5 human approval.
+- Decision engine with a 30s pending timeout and approve / modify / reject (`src/lib/decision-engine.ts`).
+- Command dispatch feed with order lifecycle DISPATCHED → ACK → ENROUTE → ON-STATION → COMPLETE.
+- RBAC + ABAC roles (operator, supervisor, commander, auditor) in `src/lib/rbac.ts`.
+- Training vs Live mode separator, degraded-mode simulation (sensor drop, comms loss, GPS jam, AI degraded).
+- Hash-chained audit log with a tamper demo and JSON export (`src/lib/audit-log.ts`).
+- One real backend surface: `/api/vanguard` AI streaming route.
 
-1. **Threat-Level Legend** (top of dashboard, replaces/augments REDCON pill):
-   `L1 OBSERVE · L2 MONITOR · L3 ENGAGE-AUTO · L4 APPROVE · L5 COMMAND`
-   with counts per level updating live.
-2. **Auto-decisions ticker** — every incoming `threat:event` is scored to L1–L5; L1–L3 produce an immediate AI action (logged with timestamp, entity, action, confidence).
-3. **Human Approval Queue** (new right-rail panel or modal) — L4 & L5 events pause and require operator **APPROVE / MODIFY / REJECT**. Each card shows AI recommendation, rationale, predicted outcome, and a 30s countdown.
-4. **Decision log timeline** — colored marks on Chronos timeline show auto vs. human decisions.
-5. **Demo controls** — buttons to inject scripted scenarios: "Drone incursion (L4)", "Vessel intrusion (L5)", "RF anomaly (L2)", so you can drive a live walkthrough.
+Gaps that block real use:
+- No authentication at all — anyone opening `/dashboard` is a "commander"; role is picked from a dropdown and stored in `localStorage`.
+- The audit log lives in a JS array in memory: it disappears on refresh, and the "tamper-evident" chain is `cyrb53`, a non-cryptographic 53-bit hash, not SHA-256. It can be forged trivially.
+- RBAC is enforced only in the UI. There is no server that could reject an unauthorised action.
+- All telemetry, decisions, and tasking orders are generated in the browser and never persisted.
+- The `/api/vanguard` AI route is unauthenticated and has no rate limiting.
 
-## Threat-level rules (deterministic mapping, demo-tunable)
+Roughly: an excellent demonstrator, about 20–25% of the way to something deployable.
 
-```text
-L1 OBSERVE       threat 0.00–0.25   AI: log only
-L2 MONITOR       threat 0.25–0.45   AI: increase sensor cadence on entity
-L3 ENGAGE-AUTO   threat 0.45–0.65   AI: dispatch nearest UAV to shadow
-L4 APPROVE       threat 0.65–0.85   AI recommends, HUMAN must approve
-L5 COMMAND       threat 0.85–1.00   AI recommends, HUMAN approves + dual-confirm
-```
-CRITICAL severity always escalates one level. Confidence < 0.5 escalates one level (uncertainty → human).
+## What a current-generation system of this class is expected to have
 
-## Files to add / change
+Grouped by priority:
 
-- `src/lib/threat-levels.ts` *(new)* — `classify(event, entity)` → `{ level: 1..5, action, autoExecute, rationale }`. Pure function, fully unit-testable.
-- `src/lib/decision-engine.ts` *(new)* — subscribes to `getBus().on("threat:event")`, runs classifier, emits new bus events: `decision:auto`, `decision:pending`, `decision:resolved`. Maintains in-memory queue.
-- Extend `src/lib/telemetry.ts` `TelemetryEventMap` with the three decision events + `Decision` type.
-- `src/components/dashboard/ThreatLevelStrip.tsx` *(new)* — 5-segment legend with live counters, replaces or sits above the existing `REDCON` row in `StatusStrip`.
-- `src/components/dashboard/ApprovalQueue.tsx` *(new)* — stacked cards for L4/L5 pending decisions with Approve / Modify / Reject and countdown timer (auto-escalates to "TIMEOUT — HOLD" if ignored).
-- `src/components/dashboard/DecisionLog.tsx` *(new)* — scrolling auto-decision feed (L1–L3).
-- `src/components/dashboard/DemoInjector.tsx` *(new)* — small floating panel with 4 scripted scenario buttons.
-- `src/routes/dashboard.tsx` — slot the new components in: ThreatLevelStrip under StatusStrip; ApprovalQueue replaces top half of right rail (Vanguard moves to a tab); DecisionLog replaces bottom of left rail or stacks under SensorFeeds; DemoInjector floating bottom-right.
-- `src/routes/api/vanguard.ts` — extend system prompt so Vanguard explains its recommendation when asked about a pending decision (no schema change).
-- `src/components/dashboard/ChronosTimeline.tsx` — add a 5th lane "DECISIONS" that plots auto (cyan dot) vs. human (amber ring) decisions.
+1. Identity and authority — real login, server-issued roles, session expiry, MFA, and a second-person rule for lethal/L5 actions that is enforced server-side, not by a checkbox.
+2. Durable, signed audit — every decision, override, mode change, and dispatch written to append-only storage with SHA-256 hash chaining, server timestamps, and a periodically signed Merkle root. Exportable as evidence.
+3. Server-authoritative decisioning — classification, ROE thresholds, and dispatch authorisation must run on the server. The browser proposes; the server decides.
+4. Commander-editable ROE policy — thresholds, auto-execute ceilings, and geofences as versioned data with an approval workflow, not constants in code.
+5. Explainability record — for each AI recommendation, store model version, inputs, confidence, and the rationale that was shown to the human who approved it.
+6. Data lineage and sensor provenance — which sensor, which time, which fusion step produced each track.
+7. Resilience — offline/disconnected operation with local queueing and reconciliation; the degraded simulator becomes a real store-and-forward path.
+8. Operational hygiene — health checks, alert fatigue controls, shift handover briefs, after-action replay of an incident timeline.
+9. Accreditation posture — data classification labels on every record, retention rules, and a documented security model (targeting NIST 800-53 / RMF style controls).
 
-## Layout impact (compact)
+## Proposed build order
 
-```text
-┌──────────────── StatusStrip ────────────────┐
-├──────── ThreatLevelStrip (L1 L2 L3 L4 L5) ──┤
-│ Sensors │   VideoWall + NexusGraph    │ Approvals │
-│ + Decis │   + EntityDetail            │ + Vanguard│
-│ Log     │                             │ + Tasking │
-├─────────────── Chronos (+ Decisions) ───────┤
-                                       [Demo Inject]
-```
+**Phase 1 — Real backend and identity (foundation)**
+Enable Lovable Cloud. Add email/password auth, a `user_roles` table with a security-definer `has_role()` function (roles never on the profile row), and put `/dashboard` behind an authenticated route gate. Role in the UI becomes read-only, derived from the server.
 
-Right rail becomes a 3-row stack: ApprovalQueue (top, fixed when items pending) / Vanguard (middle) / Tasking (bottom). When the queue is empty it collapses to a 1-line "ALL CLEAR" header.
+**Phase 2 — Durable, cryptographic audit**
+Move the audit chain server-side: SHA-256 over each entry, server-assigned sequence and timestamp, insert-only table with no update/delete policy for anyone, read scoped to auditor/commander. Verification and export run as server functions. Keep the tamper demo, but have it prove the real chain.
 
-## Demo script (what you'll click during the walkthrough)
+**Phase 3 — Server-authoritative decisions**
+Move classification and ROE evaluation into server functions. Approvals, modifications, rejections, and dispatch orders become server-validated writes with role and threat-level checks re-checked on the server. L5 requires two distinct authenticated commanders.
 
-1. Open `/dashboard` — telemetry already streaming, ThreatLevelStrip shows nominal counts.
-2. Click **"Inject: RF anomaly"** → L2 auto-decision logged in DecisionLog (no human input).
-3. Click **"Inject: Drone incursion"** → L4 card appears in ApprovalQueue with countdown, AI recommendation visible. APPROVE → DecisionLog updates, tasking order auto-dispatched, Chronos plots amber ring.
-4. Click **"Inject: Vessel intrusion"** → L5 card requires dual-confirm; show MODIFY flow (edit recommended directive before approving).
-5. Ask Vanguard: *"Why did you recommend intercept on GHOST-441?"* — streams rationale.
+**Phase 4 — Policy, explainability, replay**
+Versioned ROE policy table with a commander edit + approval flow. Persist every decision with model version and rationale. Add incident replay that reconstructs a time window from stored events.
 
-## Out of scope (call out before building)
+**Phase 5 — Hardening pass**
+Rate-limit and authenticate `/api/vanguard`, add Zod validation on every server input, leaked-password protection, classification labels and retention on all tables, then a full security scan and written security memory.
 
-- Persistence (decisions reset on reload — fine for demo).
-- Real auth / role gating on the approval action.
-- Per-sector policy editor UI (rules live in `threat-levels.ts` constants).
+## Technical notes
 
-Confirm and I'll implement.
+- Lovable Cloud (Postgres + auth) provides identity, RLS, and durable storage; server functions via `createServerFn` hold the authority checks. No Node-only services are involved, so this fits the Cloudflare Worker runtime.
+- Audit table gets `GRANT SELECT/INSERT` only; no UPDATE or DELETE policy exists for any role, so append-only is enforced at the database level.
+- Hashing moves from `cyrb53` to Web Crypto `SHA-256`, which is available in the Worker runtime.
+- The existing telemetry simulator stays as the data source in TRAINING mode; LIVE mode reads from the database. That keeps the demo intact while the real path is built.
+
+## Scope check
+
+Phase 1 alone changes how the app is entered (a login screen appears before the dashboard). Confirm you want that before proceeding, and tell me whether to run all five phases sequentially or stop after Phase 2.
