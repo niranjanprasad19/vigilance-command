@@ -195,7 +195,7 @@ export const resolveDecisionServer = createServerFn({ method: "POST" })
           confidence: data.confidence ?? null,
           severity: data.severity ?? null,
           model_version: data.modelVersion,
-          policy_version: data.policyVersion ?? null,
+          policy_version: policy.version,
           mode: data.mode,
           status: "PENDING",
           auto_execute: false,
