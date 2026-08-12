@@ -13,6 +13,7 @@ import {
   type OpsMode,
   type Role,
 } from "./ops-schemas";
+import { evaluateLevel, normalizeRoeRow } from "./roe";
 
 const RANK: Record<Role, number> = { auditor: 0, operator: 1, supervisor: 2, commander: 3 };
 
@@ -167,9 +168,10 @@ export const resolveDecisionServer = createServerFn({ method: "POST" })
           event_id: data.eventId,
           entity_id: data.entityId ?? null,
           entity_label: data.entityLabel ?? null,
-          level: data.level,
+          level,
           action: data.action,
           rationale: data.rationale,
+          score: data.score ?? null,
           confidence: data.confidence ?? null,
           severity: data.severity ?? null,
           model_version: data.modelVersion,
@@ -202,7 +204,7 @@ export const resolveDecisionServer = createServerFn({ method: "POST" })
     if (apErr) throw new Error(apErr.message);
 
     // Dual-key rule: L5 approve/modify needs two DIFFERENT commanders.
-    const needsDual = data.level === 5 && data.outcome !== "REJECTED";
+    const needsDual = requiresDual && data.outcome !== "REJECTED";
     if (needsDual) {
       const { data: keys } = await supabaseAdmin
         .from("decision_approvals")
@@ -214,7 +216,7 @@ export const resolveDecisionServer = createServerFn({ method: "POST" })
       if (distinct.size < 2) {
         await supabase.rpc("append_audit", {
           _kind: "DECISION_FIRST_KEY",
-          _payload: { event_id: data.eventId, level: data.level, outcome: data.outcome },
+          _payload: { event_id: data.eventId, level, proposed_level: data.level, roe_version: policy.version, outcome: data.outcome },
           _mode: data.mode,
           _classification: "CONFIDENTIAL",
         });
@@ -242,7 +244,13 @@ export const resolveDecisionServer = createServerFn({ method: "POST" })
       _kind: "DECISION_RESOLVED",
       _payload: {
         event_id: data.eventId,
-        level: data.level,
+        level,
+        proposed_level: data.level,
+        roe_version: policy.version,
+        score: data.score ?? null,
+        confidence: data.confidence ?? null,
+        model_version: data.modelVersion,
+        rationale: data.rationale,
         outcome: data.outcome,
         action: finalAction,
         role: effective,
@@ -251,7 +259,7 @@ export const resolveDecisionServer = createServerFn({ method: "POST" })
       _classification: "CONFIDENTIAL",
     });
 
-    return { ok: true as const, finalized: true as const, action: finalAction, decisionId: decision.id };
+    return { ok: true as const, finalized: true as const, action: finalAction, decisionId: decision.id, level };
   });
 
 export const recordTasking = createServerFn({ method: "POST" })
