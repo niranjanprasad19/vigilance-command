@@ -13,7 +13,8 @@ import type { Capability, Role } from "./rbac";
 import { can, canActOn } from "./rbac";
 import type { Decision } from "./threat-levels";
 import { setOpsRuntime } from "./ops-runtime";
-import { getMySession } from "./ops.functions";
+import { getMySession, getActiveRoe } from "./ops.functions";
+import { normalizeRoeRow, setActiveRoe } from "./roe";
 
 export type OpsMode = "TRAINING" | "LIVE";
 
@@ -51,6 +52,17 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
     queryFn: () => fetchSession(),
     staleTime: 60_000,
   });
+
+  const fetchRoe = useServerFn(getActiveRoe);
+  const { data: roeRow } = useQuery({
+    queryKey: ["roe-active"],
+    queryFn: () => fetchRoe(),
+    staleTime: 60_000,
+  });
+
+  useEffect(() => {
+    setActiveRoe(normalizeRoeRow(roeRow as never));
+  }, [roeRow]);
 
   const role = (data?.role ?? "operator") as Role;
   const roles = (data?.roles ?? []) as Role[];

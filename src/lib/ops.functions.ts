@@ -13,6 +13,7 @@ import {
   type OpsMode,
   type Role,
 } from "./ops-schemas";
+import { evaluateLevel, normalizeRoeRow } from "./roe";
 
 const RANK: Record<Role, number> = { auditor: 0, operator: 1, supervisor: 2, commander: 3 };
 
@@ -86,26 +87,46 @@ export const recordAutoDecision = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => autoDecisionInput.parse(d))
   .handler(async ({ data, context }) => {
+    // Auto-execution is only legitimate if the ACTIVE server-side ROE says so.
+    const { data: roeRow } = await context.supabase
+      .from("roe_policies")
+      .select("version, name, thresholds, auto_execute_ceiling, dual_confirm_from")
+      .eq("active", true)
+      .order("version", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const policy = normalizeRoeRow(roeRow as never);
+    const level =
+      data.score != null
+        ? evaluateLevel(policy, {
+            score: data.score,
+            severity: data.severity ?? null,
+            confidence: data.confidence ?? 1,
+          })
+        : data.level;
+    const autoExecute = data.autoExecute && level <= policy.autoExecuteCeiling;
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.from("decisions").upsert(
       {
         event_id: data.eventId,
         entity_id: data.entityId ?? null,
         entity_label: data.entityLabel ?? null,
-        level: data.level,
+        level,
         action: data.action,
         rationale: data.rationale,
         score: data.score ?? null,
         confidence: data.confidence ?? null,
         severity: data.severity ?? null,
         model_version: data.modelVersion,
-        policy_version: data.policyVersion ?? null,
+        policy_version: policy.version,
         mode: data.mode,
-        status: data.autoExecute ? "AUTO-EXECUTED" : "PENDING",
-        auto_execute: data.autoExecute,
+        status: autoExecute ? "AUTO-EXECUTED" : "PENDING",
+        auto_execute: autoExecute,
         created_by: context.userId,
-        resolved_at: data.autoExecute ? new Date().toISOString() : null,
+        resolved_at: autoExecute ? new Date().toISOString() : null,
       },
+
       { onConflict: "event_id" },
     );
     if (error) throw new Error(error.message);
@@ -126,15 +147,37 @@ export const resolveDecisionServer = createServerFn({ method: "POST" })
     const roles = await currentRole(supabase, userId);
     const effective = (roles.slice().sort((a, b) => RANK[b] - RANK[a])[0] ?? "operator") as Role;
 
+    // ---- Server-authoritative classification ----
+    // The browser's `level` is a proposal. The server re-derives it from the
+    // ACTIVE ROE policy and uses that for every authority check below.
+    const { data: roeRow } = await supabase
+      .from("roe_policies")
+      .select("version, name, thresholds, auto_execute_ceiling, dual_confirm_from")
+      .eq("active", true)
+      .order("version", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const policy = normalizeRoeRow(roeRow as never);
+    const level =
+      data.score != null
+        ? evaluateLevel(policy, {
+            score: data.score,
+            severity: data.severity ?? null,
+            confidence: data.confidence ?? 1,
+          })
+        : data.level;
+    const requiresDual = level >= policy.dualConfirmFrom;
+
     if (effective === "auditor") {
       return { ok: false as const, reason: "Auditors are read-only" };
     }
-    if (data.level === 5 && !roles.includes("commander")) {
+    if (level >= 5 && !roles.includes("commander")) {
       return { ok: false as const, reason: "L5 authority requires Commander" };
     }
-    if (data.level === 5 && data.outcome !== "REJECTED") {
-      // dual-key path handled below
+    if (level === 4 && !(roles.includes("supervisor") || roles.includes("commander"))) {
+      return { ok: false as const, reason: "L4 authority requires Supervisor or Commander" };
     }
+
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -145,13 +188,14 @@ export const resolveDecisionServer = createServerFn({ method: "POST" })
           event_id: data.eventId,
           entity_id: data.entityId ?? null,
           entity_label: data.entityLabel ?? null,
-          level: data.level,
+          level,
           action: data.action,
           rationale: data.rationale,
+          score: data.score ?? null,
           confidence: data.confidence ?? null,
           severity: data.severity ?? null,
           model_version: data.modelVersion,
-          policy_version: data.policyVersion ?? null,
+          policy_version: policy.version,
           mode: data.mode,
           status: "PENDING",
           auto_execute: false,
@@ -180,7 +224,7 @@ export const resolveDecisionServer = createServerFn({ method: "POST" })
     if (apErr) throw new Error(apErr.message);
 
     // Dual-key rule: L5 approve/modify needs two DIFFERENT commanders.
-    const needsDual = data.level === 5 && data.outcome !== "REJECTED";
+    const needsDual = requiresDual && data.outcome !== "REJECTED";
     if (needsDual) {
       const { data: keys } = await supabaseAdmin
         .from("decision_approvals")
@@ -192,7 +236,7 @@ export const resolveDecisionServer = createServerFn({ method: "POST" })
       if (distinct.size < 2) {
         await supabase.rpc("append_audit", {
           _kind: "DECISION_FIRST_KEY",
-          _payload: { event_id: data.eventId, level: data.level, outcome: data.outcome },
+          _payload: { event_id: data.eventId, level, proposed_level: data.level, roe_version: policy.version, outcome: data.outcome },
           _mode: data.mode,
           _classification: "CONFIDENTIAL",
         });
@@ -220,7 +264,13 @@ export const resolveDecisionServer = createServerFn({ method: "POST" })
       _kind: "DECISION_RESOLVED",
       _payload: {
         event_id: data.eventId,
-        level: data.level,
+        level,
+        proposed_level: data.level,
+        roe_version: policy.version,
+        score: data.score ?? null,
+        confidence: data.confidence ?? null,
+        model_version: data.modelVersion,
+        rationale: data.rationale,
         outcome: data.outcome,
         action: finalAction,
         role: effective,
@@ -229,7 +279,7 @@ export const resolveDecisionServer = createServerFn({ method: "POST" })
       _classification: "CONFIDENTIAL",
     });
 
-    return { ok: true as const, finalized: true as const, action: finalAction, decisionId: decision.id };
+    return { ok: true as const, finalized: true as const, action: finalAction, decisionId: decision.id, level };
   });
 
 export const recordTasking = createServerFn({ method: "POST" })

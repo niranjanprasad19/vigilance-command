@@ -92,6 +92,8 @@ export async function resolveDecision(
         level: d.level,
         action: d.action,
         rationale: d.rationale,
+        score: d.score,
+        policyVersion: d.policyVersion,
         confidence: d.event.confidence,
         severity: d.event.severity,
         modelVersion: "vigilance-triage-1.0.0",
