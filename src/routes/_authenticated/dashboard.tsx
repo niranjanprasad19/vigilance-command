@@ -15,6 +15,8 @@ import { DemoInjector } from "@/components/dashboard/DemoInjector";
 import { CommandDispatchFeed } from "@/components/dashboard/CommandDispatchFeed";
 import { OpsBar } from "@/components/dashboard/OpsBar";
 import { AuditLogPanel } from "@/components/dashboard/AuditLogPanel";
+import { RoePanel } from "@/components/dashboard/RoePanel";
+import { ReplayPanel } from "@/components/dashboard/ReplayPanel";
 import { startDecisionEngine } from "@/lib/decision-engine";
 import { OpsProvider, useOps } from "@/lib/ops-context";
 import type { Entity } from "@/lib/telemetry";
@@ -37,7 +39,7 @@ function DashboardRoot() {
   );
 }
 
-type RightTab = "approvals" | "dispatch" | "vanguard" | "tasking" | "audit";
+type RightTab = "approvals" | "dispatch" | "vanguard" | "tasking" | "roe" | "replay" | "audit";
 
 function Dashboard() {
   const ops = useOps();
@@ -53,6 +55,8 @@ function Dashboard() {
     { key: "dispatch",  label: "Dispatch" },
     { key: "vanguard",  label: "Vanguard" },
     { key: "tasking",   label: "Tasking" },
+    { key: "roe",       label: "ROE" },
+    { key: "replay",    label: "Replay" },
     { key: "audit",     label: "Audit", gated: !ops.can("audit.view") },
   ];
 
@@ -113,7 +117,7 @@ function Dashboard() {
                 key={t.key}
                 disabled={t.gated}
                 onClick={() => setRightTab(t.key)}
-                className={`flex-1 py-2 px-1 font-mono text-[10px] uppercase tracking-[0.14em] transition border-b-2 ${
+                className={`flex-1 py-2 px-0.5 font-mono text-[10px] uppercase tracking-[0.14em] transition border-b-2 ${
                   rightTab === t.key
                     ? "text-cyan border-cyan bg-background"
                     : "text-muted-foreground border-transparent hover:text-foreground"
@@ -128,6 +132,8 @@ function Dashboard() {
             {rightTab === "dispatch"  && <CommandDispatchFeed />}
             {rightTab === "vanguard"  && <VanguardConsole />}
             {rightTab === "tasking"   && <TaskingConsole />}
+            {rightTab === "roe"       && <RoePanel />}
+            {rightTab === "replay"    && <ReplayPanel />}
             {rightTab === "audit"     && <AuditLogPanel />}
           </div>
         </aside>
