@@ -79,6 +79,8 @@ export function startAuditCapture() {
         level: d.level,
         action: d.action,
         rationale: d.rationale,
+        score: d.score,
+        policyVersion: d.policyVersion,
         confidence: d.event.confidence,
         severity: d.event.severity,
         modelVersion: "vigilance-triage-1.0.0",
@@ -88,8 +90,8 @@ export function startAuditCapture() {
     }).catch((e) => console.error(e));
     void appendAudit("DECISION_AUTO", {
       id: d.id, level: d.level, action: d.action, label: d.event.label,
-      confidence: d.event.confidence, rationale: d.rationale,
-      model_version: "vigilance-triage-1.0.0",
+      confidence: d.event.confidence, rationale: d.rationale, score: d.score,
+      roe_version: d.policyVersion, model_version: "vigilance-triage-1.0.0",
     }, getMode(), "CONFIDENTIAL");
   });
 
