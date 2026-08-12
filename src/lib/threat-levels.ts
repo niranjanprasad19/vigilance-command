@@ -2,6 +2,7 @@
 // L1-L3 → AI auto-executes. L4-L5 → human-in-the-loop required.
 
 import type { Entity, ThreatEvent } from "./telemetry";
+import { evaluateLevel, fusionScore, getActiveRoePolicy } from "./roe";
 
 export type ThreatLevel = 1 | 2 | 3 | 4 | 5;
 
@@ -9,6 +10,8 @@ export type Decision = {
   id: string;
   ts: number;
   level: ThreatLevel;
+  score: number;
+  policyVersion: number;
   event: ThreatEvent;
   entity?: Entity;
   action: string;
