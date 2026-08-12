@@ -1,11 +1,23 @@
 import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { Send } from "lucide-react";
 
 export function VanguardConsole() {
   const [input, setInput] = useState("");
-  const [transport] = useState(() => new DefaultChatTransport({ api: "/api/vanguard" }));
+  const [transport] = useState(
+    () =>
+      new DefaultChatTransport({
+        api: "/api/vanguard",
+        // The endpoint is authenticated; attach the caller's session token.
+        headers: async () => {
+          const { data } = await supabase.auth.getSession();
+          const token = data.session?.access_token;
+          return token ? { Authorization: `Bearer ${token}` } : {};
+        },
+      }),
+  );
   const { messages, sendMessage, status, error } = useChat({ transport });
 
   useEffect(() => {
