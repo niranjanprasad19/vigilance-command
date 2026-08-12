@@ -32,18 +32,6 @@ export const LEVEL_META: Record<
   5: { code: "L5", name: "COMMAND", tone: "text-destructive", bg: "bg-destructive/15", border: "border-destructive" },
 };
 
-function baseLevel(score: number): ThreatLevel {
-  if (score >= 0.85) return 5;
-  if (score >= 0.65) return 4;
-  if (score >= 0.45) return 3;
-  if (score >= 0.25) return 2;
-  return 1;
-}
-
-function bump(l: ThreatLevel, n: number): ThreatLevel {
-  return Math.min(5, Math.max(1, l + n)) as ThreatLevel;
-}
-
 const ACTIONS: Record<ThreatLevel, (label: string) => string> = {
   1: (l) => `Log ${l} to passive register`,
   2: (l) => `Increase sensor cadence on ${l}; flag analyst feed`,
@@ -53,30 +41,36 @@ const ACTIONS: Record<ThreatLevel, (label: string) => string> = {
 };
 
 export function classify(event: ThreatEvent, entity?: Entity): Decision {
-  const score = Math.max(event.confidence * 0.4 + (entity?.threat ?? 0) * 0.6, 0);
-  let level = baseLevel(score);
-  if (event.severity === "CRITICAL") level = bump(level, 1);
-  if (event.confidence < 0.5) level = bump(level, 1);
+  const policy = getActiveRoePolicy();
+  const score = fusionScore(event.confidence, entity?.threat ?? 0);
+  const level = evaluateLevel(policy, {
+    score,
+    severity: event.severity,
+    confidence: event.confidence,
+  }) as ThreatLevel;
 
   const label = entity?.label ?? event.entityId;
   const action = ACTIONS[level](label);
 
   const rationale =
     `score ${(score * 100).toFixed(0)} · sev ${event.severity} · conf ${(event.confidence * 100).toFixed(0)}% ` +
-    `· entity-threat ${((entity?.threat ?? 0) * 100).toFixed(0)}%`;
+    `· entity-threat ${((entity?.threat ?? 0) * 100).toFixed(0)}% · ROE v${policy.version}`;
 
-  const autoExecute = level <= 3;
+  const autoExecute = level <= policy.autoExecuteCeiling;
 
   return {
     id: `dec-${event.id}`,
     ts: Date.now(),
     level,
+    score,
+    policyVersion: policy.version,
     event,
     entity,
     action,
     rationale,
     autoExecute,
-    requiresDualConfirm: level === 5,
+    requiresDualConfirm: level >= policy.dualConfirmFrom,
     status: autoExecute ? "AUTO-EXECUTED" : "PENDING",
   };
 }
+
