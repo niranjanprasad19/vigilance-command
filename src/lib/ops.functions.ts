@@ -87,26 +87,46 @@ export const recordAutoDecision = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => autoDecisionInput.parse(d))
   .handler(async ({ data, context }) => {
+    // Auto-execution is only legitimate if the ACTIVE server-side ROE says so.
+    const { data: roeRow } = await context.supabase
+      .from("roe_policies")
+      .select("version, name, thresholds, auto_execute_ceiling, dual_confirm_from")
+      .eq("active", true)
+      .order("version", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const policy = normalizeRoeRow(roeRow as never);
+    const level =
+      data.score != null
+        ? evaluateLevel(policy, {
+            score: data.score,
+            severity: data.severity ?? null,
+            confidence: data.confidence ?? 1,
+          })
+        : data.level;
+    const autoExecute = data.autoExecute && level <= policy.autoExecuteCeiling;
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.from("decisions").upsert(
       {
         event_id: data.eventId,
         entity_id: data.entityId ?? null,
         entity_label: data.entityLabel ?? null,
-        level: data.level,
+        level,
         action: data.action,
         rationale: data.rationale,
         score: data.score ?? null,
         confidence: data.confidence ?? null,
         severity: data.severity ?? null,
         model_version: data.modelVersion,
-        policy_version: data.policyVersion ?? null,
+        policy_version: policy.version,
         mode: data.mode,
-        status: data.autoExecute ? "AUTO-EXECUTED" : "PENDING",
-        auto_execute: data.autoExecute,
+        status: autoExecute ? "AUTO-EXECUTED" : "PENDING",
+        auto_execute: autoExecute,
         created_by: context.userId,
-        resolved_at: data.autoExecute ? new Date().toISOString() : null,
+        resolved_at: autoExecute ? new Date().toISOString() : null,
       },
+
       { onConflict: "event_id" },
     );
     if (error) throw new Error(error.message);
