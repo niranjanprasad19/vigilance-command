@@ -126,15 +126,37 @@ export const resolveDecisionServer = createServerFn({ method: "POST" })
     const roles = await currentRole(supabase, userId);
     const effective = (roles.slice().sort((a, b) => RANK[b] - RANK[a])[0] ?? "operator") as Role;
 
+    // ---- Server-authoritative classification ----
+    // The browser's `level` is a proposal. The server re-derives it from the
+    // ACTIVE ROE policy and uses that for every authority check below.
+    const { data: roeRow } = await supabase
+      .from("roe_policies")
+      .select("version, name, thresholds, auto_execute_ceiling, dual_confirm_from")
+      .eq("active", true)
+      .order("version", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const policy = normalizeRoeRow(roeRow as never);
+    const level =
+      data.score != null
+        ? evaluateLevel(policy, {
+            score: data.score,
+            severity: data.severity ?? null,
+            confidence: data.confidence ?? 1,
+          })
+        : data.level;
+    const requiresDual = level >= policy.dualConfirmFrom;
+
     if (effective === "auditor") {
       return { ok: false as const, reason: "Auditors are read-only" };
     }
-    if (data.level === 5 && !roles.includes("commander")) {
+    if (level >= 5 && !roles.includes("commander")) {
       return { ok: false as const, reason: "L5 authority requires Commander" };
     }
-    if (data.level === 5 && data.outcome !== "REJECTED") {
-      // dual-key path handled below
+    if (level === 4 && !(roles.includes("supervisor") || roles.includes("commander"))) {
+      return { ok: false as const, reason: "L4 authority requires Supervisor or Commander" };
     }
+
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
