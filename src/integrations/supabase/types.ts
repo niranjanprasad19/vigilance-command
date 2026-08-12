@@ -312,6 +312,7 @@ export type Database = {
           ts: string
         }[]
       }
+      can_act: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -323,6 +324,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      is_staff: { Args: { _user_id: string }; Returns: boolean }
       verify_audit_chain: {
         Args: never
         Returns: {
