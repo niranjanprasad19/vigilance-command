@@ -15,6 +15,17 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedConsoleRouteImport } from './routes/_authenticated/console'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as ApiVanguardRouteImport } from './routes/api/vanguard'
+import { Route as AuthenticatedConsoleApprovalsRouteImport } from './routes/_authenticated/console.approvals'
+import { Route as AuthenticatedConsoleAuditRouteImport } from './routes/_authenticated/console.audit'
+import { Route as AuthenticatedConsoleChronosRouteImport } from './routes/_authenticated/console.chronos'
+import { Route as AuthenticatedConsoleDispatchRouteImport } from './routes/_authenticated/console.dispatch'
+import { Route as AuthenticatedConsoleNexusRouteImport } from './routes/_authenticated/console.nexus'
+import { Route as AuthenticatedConsoleReplayRouteImport } from './routes/_authenticated/console.replay'
+import { Route as AuthenticatedConsoleRoeRouteImport } from './routes/_authenticated/console.roe'
+import { Route as AuthenticatedConsoleSensorsRouteImport } from './routes/_authenticated/console.sensors'
+import { Route as AuthenticatedConsoleTaskingRouteImport } from './routes/_authenticated/console.tasking'
+import { Route as AuthenticatedConsoleVanguardRouteImport } from './routes/_authenticated/console.vanguard'
+import { Route as AuthenticatedConsoleVideoRouteImport } from './routes/_authenticated/console.video'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -45,35 +56,165 @@ const ApiVanguardRoute = ApiVanguardRouteImport.update({
   path: '/api/vanguard',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedConsoleApprovalsRoute =
+  AuthenticatedConsoleApprovalsRouteImport.update({
+    id: '/approvals',
+    path: '/approvals',
+    getParentRoute: () => AuthenticatedConsoleRoute,
+  } as any)
+const AuthenticatedConsoleAuditRoute =
+  AuthenticatedConsoleAuditRouteImport.update({
+    id: '/audit',
+    path: '/audit',
+    getParentRoute: () => AuthenticatedConsoleRoute,
+  } as any)
+const AuthenticatedConsoleChronosRoute =
+  AuthenticatedConsoleChronosRouteImport.update({
+    id: '/chronos',
+    path: '/chronos',
+    getParentRoute: () => AuthenticatedConsoleRoute,
+  } as any)
+const AuthenticatedConsoleDispatchRoute =
+  AuthenticatedConsoleDispatchRouteImport.update({
+    id: '/dispatch',
+    path: '/dispatch',
+    getParentRoute: () => AuthenticatedConsoleRoute,
+  } as any)
+const AuthenticatedConsoleNexusRoute =
+  AuthenticatedConsoleNexusRouteImport.update({
+    id: '/nexus',
+    path: '/nexus',
+    getParentRoute: () => AuthenticatedConsoleRoute,
+  } as any)
+const AuthenticatedConsoleReplayRoute =
+  AuthenticatedConsoleReplayRouteImport.update({
+    id: '/replay',
+    path: '/replay',
+    getParentRoute: () => AuthenticatedConsoleRoute,
+  } as any)
+const AuthenticatedConsoleRoeRoute = AuthenticatedConsoleRoeRouteImport.update({
+  id: '/roe',
+  path: '/roe',
+  getParentRoute: () => AuthenticatedConsoleRoute,
+} as any)
+const AuthenticatedConsoleSensorsRoute =
+  AuthenticatedConsoleSensorsRouteImport.update({
+    id: '/sensors',
+    path: '/sensors',
+    getParentRoute: () => AuthenticatedConsoleRoute,
+  } as any)
+const AuthenticatedConsoleTaskingRoute =
+  AuthenticatedConsoleTaskingRouteImport.update({
+    id: '/tasking',
+    path: '/tasking',
+    getParentRoute: () => AuthenticatedConsoleRoute,
+  } as any)
+const AuthenticatedConsoleVanguardRoute =
+  AuthenticatedConsoleVanguardRouteImport.update({
+    id: '/vanguard',
+    path: '/vanguard',
+    getParentRoute: () => AuthenticatedConsoleRoute,
+  } as any)
+const AuthenticatedConsoleVideoRoute =
+  AuthenticatedConsoleVideoRouteImport.update({
+    id: '/video',
+    path: '/video',
+    getParentRoute: () => AuthenticatedConsoleRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/console': typeof AuthenticatedConsoleRoute
+  '/console': typeof AuthenticatedConsoleRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/api/vanguard': typeof ApiVanguardRoute
+  '/console/approvals': typeof AuthenticatedConsoleApprovalsRoute
+  '/console/audit': typeof AuthenticatedConsoleAuditRoute
+  '/console/chronos': typeof AuthenticatedConsoleChronosRoute
+  '/console/dispatch': typeof AuthenticatedConsoleDispatchRoute
+  '/console/nexus': typeof AuthenticatedConsoleNexusRoute
+  '/console/replay': typeof AuthenticatedConsoleReplayRoute
+  '/console/roe': typeof AuthenticatedConsoleRoeRoute
+  '/console/sensors': typeof AuthenticatedConsoleSensorsRoute
+  '/console/tasking': typeof AuthenticatedConsoleTaskingRoute
+  '/console/vanguard': typeof AuthenticatedConsoleVanguardRoute
+  '/console/video': typeof AuthenticatedConsoleVideoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/console': typeof AuthenticatedConsoleRoute
+  '/console': typeof AuthenticatedConsoleRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/api/vanguard': typeof ApiVanguardRoute
+  '/console/approvals': typeof AuthenticatedConsoleApprovalsRoute
+  '/console/audit': typeof AuthenticatedConsoleAuditRoute
+  '/console/chronos': typeof AuthenticatedConsoleChronosRoute
+  '/console/dispatch': typeof AuthenticatedConsoleDispatchRoute
+  '/console/nexus': typeof AuthenticatedConsoleNexusRoute
+  '/console/replay': typeof AuthenticatedConsoleReplayRoute
+  '/console/roe': typeof AuthenticatedConsoleRoeRoute
+  '/console/sensors': typeof AuthenticatedConsoleSensorsRoute
+  '/console/tasking': typeof AuthenticatedConsoleTaskingRoute
+  '/console/vanguard': typeof AuthenticatedConsoleVanguardRoute
+  '/console/video': typeof AuthenticatedConsoleVideoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
-  '/_authenticated/console': typeof AuthenticatedConsoleRoute
+  '/_authenticated/console': typeof AuthenticatedConsoleRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/api/vanguard': typeof ApiVanguardRoute
+  '/_authenticated/console/approvals': typeof AuthenticatedConsoleApprovalsRoute
+  '/_authenticated/console/audit': typeof AuthenticatedConsoleAuditRoute
+  '/_authenticated/console/chronos': typeof AuthenticatedConsoleChronosRoute
+  '/_authenticated/console/dispatch': typeof AuthenticatedConsoleDispatchRoute
+  '/_authenticated/console/nexus': typeof AuthenticatedConsoleNexusRoute
+  '/_authenticated/console/replay': typeof AuthenticatedConsoleReplayRoute
+  '/_authenticated/console/roe': typeof AuthenticatedConsoleRoeRoute
+  '/_authenticated/console/sensors': typeof AuthenticatedConsoleSensorsRoute
+  '/_authenticated/console/tasking': typeof AuthenticatedConsoleTaskingRoute
+  '/_authenticated/console/vanguard': typeof AuthenticatedConsoleVanguardRoute
+  '/_authenticated/console/video': typeof AuthenticatedConsoleVideoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/console' | '/dashboard' | '/api/vanguard'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/console'
+    | '/dashboard'
+    | '/api/vanguard'
+    | '/console/approvals'
+    | '/console/audit'
+    | '/console/chronos'
+    | '/console/dispatch'
+    | '/console/nexus'
+    | '/console/replay'
+    | '/console/roe'
+    | '/console/sensors'
+    | '/console/tasking'
+    | '/console/vanguard'
+    | '/console/video'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/console' | '/dashboard' | '/api/vanguard'
+  to:
+    | '/'
+    | '/auth'
+    | '/console'
+    | '/dashboard'
+    | '/api/vanguard'
+    | '/console/approvals'
+    | '/console/audit'
+    | '/console/chronos'
+    | '/console/dispatch'
+    | '/console/nexus'
+    | '/console/replay'
+    | '/console/roe'
+    | '/console/sensors'
+    | '/console/tasking'
+    | '/console/vanguard'
+    | '/console/video'
   id:
     | '__root__'
     | '/'
@@ -82,6 +223,17 @@ export interface FileRouteTypes {
     | '/_authenticated/console'
     | '/_authenticated/dashboard'
     | '/api/vanguard'
+    | '/_authenticated/console/approvals'
+    | '/_authenticated/console/audit'
+    | '/_authenticated/console/chronos'
+    | '/_authenticated/console/dispatch'
+    | '/_authenticated/console/nexus'
+    | '/_authenticated/console/replay'
+    | '/_authenticated/console/roe'
+    | '/_authenticated/console/sensors'
+    | '/_authenticated/console/tasking'
+    | '/_authenticated/console/vanguard'
+    | '/_authenticated/console/video'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -135,16 +287,124 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiVanguardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/console/approvals': {
+      id: '/_authenticated/console/approvals'
+      path: '/approvals'
+      fullPath: '/console/approvals'
+      preLoaderRoute: typeof AuthenticatedConsoleApprovalsRouteImport
+      parentRoute: typeof AuthenticatedConsoleRoute
+    }
+    '/_authenticated/console/audit': {
+      id: '/_authenticated/console/audit'
+      path: '/audit'
+      fullPath: '/console/audit'
+      preLoaderRoute: typeof AuthenticatedConsoleAuditRouteImport
+      parentRoute: typeof AuthenticatedConsoleRoute
+    }
+    '/_authenticated/console/chronos': {
+      id: '/_authenticated/console/chronos'
+      path: '/chronos'
+      fullPath: '/console/chronos'
+      preLoaderRoute: typeof AuthenticatedConsoleChronosRouteImport
+      parentRoute: typeof AuthenticatedConsoleRoute
+    }
+    '/_authenticated/console/dispatch': {
+      id: '/_authenticated/console/dispatch'
+      path: '/dispatch'
+      fullPath: '/console/dispatch'
+      preLoaderRoute: typeof AuthenticatedConsoleDispatchRouteImport
+      parentRoute: typeof AuthenticatedConsoleRoute
+    }
+    '/_authenticated/console/nexus': {
+      id: '/_authenticated/console/nexus'
+      path: '/nexus'
+      fullPath: '/console/nexus'
+      preLoaderRoute: typeof AuthenticatedConsoleNexusRouteImport
+      parentRoute: typeof AuthenticatedConsoleRoute
+    }
+    '/_authenticated/console/replay': {
+      id: '/_authenticated/console/replay'
+      path: '/replay'
+      fullPath: '/console/replay'
+      preLoaderRoute: typeof AuthenticatedConsoleReplayRouteImport
+      parentRoute: typeof AuthenticatedConsoleRoute
+    }
+    '/_authenticated/console/roe': {
+      id: '/_authenticated/console/roe'
+      path: '/roe'
+      fullPath: '/console/roe'
+      preLoaderRoute: typeof AuthenticatedConsoleRoeRouteImport
+      parentRoute: typeof AuthenticatedConsoleRoute
+    }
+    '/_authenticated/console/sensors': {
+      id: '/_authenticated/console/sensors'
+      path: '/sensors'
+      fullPath: '/console/sensors'
+      preLoaderRoute: typeof AuthenticatedConsoleSensorsRouteImport
+      parentRoute: typeof AuthenticatedConsoleRoute
+    }
+    '/_authenticated/console/tasking': {
+      id: '/_authenticated/console/tasking'
+      path: '/tasking'
+      fullPath: '/console/tasking'
+      preLoaderRoute: typeof AuthenticatedConsoleTaskingRouteImport
+      parentRoute: typeof AuthenticatedConsoleRoute
+    }
+    '/_authenticated/console/vanguard': {
+      id: '/_authenticated/console/vanguard'
+      path: '/vanguard'
+      fullPath: '/console/vanguard'
+      preLoaderRoute: typeof AuthenticatedConsoleVanguardRouteImport
+      parentRoute: typeof AuthenticatedConsoleRoute
+    }
+    '/_authenticated/console/video': {
+      id: '/_authenticated/console/video'
+      path: '/video'
+      fullPath: '/console/video'
+      preLoaderRoute: typeof AuthenticatedConsoleVideoRouteImport
+      parentRoute: typeof AuthenticatedConsoleRoute
+    }
   }
 }
 
+interface AuthenticatedConsoleRouteChildren {
+  AuthenticatedConsoleApprovalsRoute: typeof AuthenticatedConsoleApprovalsRoute
+  AuthenticatedConsoleAuditRoute: typeof AuthenticatedConsoleAuditRoute
+  AuthenticatedConsoleChronosRoute: typeof AuthenticatedConsoleChronosRoute
+  AuthenticatedConsoleDispatchRoute: typeof AuthenticatedConsoleDispatchRoute
+  AuthenticatedConsoleNexusRoute: typeof AuthenticatedConsoleNexusRoute
+  AuthenticatedConsoleReplayRoute: typeof AuthenticatedConsoleReplayRoute
+  AuthenticatedConsoleRoeRoute: typeof AuthenticatedConsoleRoeRoute
+  AuthenticatedConsoleSensorsRoute: typeof AuthenticatedConsoleSensorsRoute
+  AuthenticatedConsoleTaskingRoute: typeof AuthenticatedConsoleTaskingRoute
+  AuthenticatedConsoleVanguardRoute: typeof AuthenticatedConsoleVanguardRoute
+  AuthenticatedConsoleVideoRoute: typeof AuthenticatedConsoleVideoRoute
+}
+
+const AuthenticatedConsoleRouteChildren: AuthenticatedConsoleRouteChildren = {
+  AuthenticatedConsoleApprovalsRoute: AuthenticatedConsoleApprovalsRoute,
+  AuthenticatedConsoleAuditRoute: AuthenticatedConsoleAuditRoute,
+  AuthenticatedConsoleChronosRoute: AuthenticatedConsoleChronosRoute,
+  AuthenticatedConsoleDispatchRoute: AuthenticatedConsoleDispatchRoute,
+  AuthenticatedConsoleNexusRoute: AuthenticatedConsoleNexusRoute,
+  AuthenticatedConsoleReplayRoute: AuthenticatedConsoleReplayRoute,
+  AuthenticatedConsoleRoeRoute: AuthenticatedConsoleRoeRoute,
+  AuthenticatedConsoleSensorsRoute: AuthenticatedConsoleSensorsRoute,
+  AuthenticatedConsoleTaskingRoute: AuthenticatedConsoleTaskingRoute,
+  AuthenticatedConsoleVanguardRoute: AuthenticatedConsoleVanguardRoute,
+  AuthenticatedConsoleVideoRoute: AuthenticatedConsoleVideoRoute,
+}
+
+const AuthenticatedConsoleRouteWithChildren =
+  AuthenticatedConsoleRoute._addFileChildren(AuthenticatedConsoleRouteChildren)
+
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedConsoleRoute: typeof AuthenticatedConsoleRoute
+  AuthenticatedConsoleRoute: typeof AuthenticatedConsoleRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedConsoleRoute: AuthenticatedConsoleRoute,
+  AuthenticatedConsoleRoute: AuthenticatedConsoleRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
 }
 
