@@ -1,7 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { StatusStrip } from "@/components/dashboard/StatusStrip";
-import { ThreatLevelStrip } from "@/components/dashboard/ThreatLevelStrip";
+import { useState } from "react";
 import { SensorFeeds } from "@/components/dashboard/SensorFeeds";
 import { NexusGraph } from "@/components/dashboard/NexusGraph";
 import { ChronosTimeline } from "@/components/dashboard/ChronosTimeline";
@@ -11,14 +9,11 @@ import { EntityDetail } from "@/components/dashboard/EntityDetail";
 import { VideoWall } from "@/components/dashboard/VideoWall";
 import { ApprovalQueue } from "@/components/dashboard/ApprovalQueue";
 import { DecisionLog } from "@/components/dashboard/DecisionLog";
-import { DemoInjector } from "@/components/dashboard/DemoInjector";
 import { CommandDispatchFeed } from "@/components/dashboard/CommandDispatchFeed";
-import { OpsBar } from "@/components/dashboard/OpsBar";
 import { AuditLogPanel } from "@/components/dashboard/AuditLogPanel";
 import { RoePanel } from "@/components/dashboard/RoePanel";
 import { ReplayPanel } from "@/components/dashboard/ReplayPanel";
-import { startDecisionEngine } from "@/lib/decision-engine";
-import { OpsProvider, useOps } from "@/lib/ops-context";
+import { useOps } from "@/lib/ops-context";
 import type { Entity } from "@/lib/telemetry";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -26,18 +21,12 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
     meta: [
       { title: "Vigilance · Command Console" },
       { name: "description", content: "Real-time multi-domain operational dashboard." },
+      { property: "og:title", content: "Vigilance · Command Console" },
+      { property: "og:description", content: "Real-time multi-domain operational dashboard." },
     ],
   }),
-  component: DashboardRoot,
+  component: Dashboard,
 });
-
-function DashboardRoot() {
-  return (
-    <OpsProvider>
-      <Dashboard />
-    </OpsProvider>
-  );
-}
 
 type RightTab = "approvals" | "dispatch" | "vanguard" | "tasking" | "roe" | "replay" | "audit";
 
@@ -45,10 +34,6 @@ function Dashboard() {
   const ops = useOps();
   const [selected, setSelected] = useState<Entity | null>(null);
   const [rightTab, setRightTab] = useState<RightTab>("approvals");
-
-  useEffect(() => {
-    startDecisionEngine();
-  }, []);
 
   const tabs: { key: RightTab; label: string; gated?: boolean }[] = [
     { key: "approvals", label: "Approvals" },
@@ -61,29 +46,7 @@ function Dashboard() {
   ];
 
   return (
-    <div className="min-h-screen lg:h-screen flex flex-col bg-background lg:overflow-hidden relative">
-      {/* TRAINING watermark — full-screen, non-interactive */}
-      {ops.mode === "TRAINING" && (
-        <div
-          aria-hidden
-          className="pointer-events-none fixed inset-0 z-20 flex items-center justify-center select-none"
-        >
-          <div className="font-display text-[18vw] font-black text-cyan/[0.04] tracking-widest rotate-[-18deg]">
-            TRAINING
-          </div>
-        </div>
-      )}
-      {ops.mode === "LIVE" && (
-        <div
-          aria-hidden
-          className="pointer-events-none fixed inset-0 z-20 ring-2 ring-destructive/40"
-        />
-      )}
-
-      <StatusStrip />
-      <OpsBar />
-      <ThreatLevelStrip />
-
+    <div className="flex-1 flex flex-col lg:min-h-0">
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-px bg-border lg:min-h-0">
         {/* Left rail: sensor feeds + decision log */}
         <aside className="lg:col-span-3 bg-background flex flex-col lg:min-h-0 order-2 lg:order-1">
@@ -109,7 +72,7 @@ function Dashboard() {
           </div>
         </main>
 
-        {/* Right rail: tabbed Approvals / Dispatch / Vanguard / Tasking / Audit */}
+        {/* Right rail: tabbed panels */}
         <aside className="lg:col-span-3 bg-background flex flex-col lg:min-h-0 order-3">
           <div className="flex border-b border-border bg-card/50">
             {tabs.map((t) => (
@@ -139,10 +102,7 @@ function Dashboard() {
         </aside>
       </div>
 
-      {/* Bottom: Chronos timeline */}
       <ChronosTimeline />
-
-      <DemoInjector />
     </div>
   );
 }
