@@ -118,7 +118,7 @@ export const exportAuditBundle = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const [ent, roots, verify] = await Promise.all([
+    const [ent, roots] = await Promise.all([
       supabase.from("audit_entries")
         .select("seq, ts, kind, actor_id, actor_role, mode, classification, payload, prev_hash, hash, client_request_id")
         .order("seq", { ascending: false }).limit(data.limit),
