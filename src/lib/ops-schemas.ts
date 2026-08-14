@@ -12,7 +12,16 @@ export const auditInput = z.object({
   payload: z.record(z.string(), z.unknown()).default({}),
   mode,
   classification: classification.optional(),
+  idempotencyKey: z.string().max(120).optional(),
 });
+
+// Provenance shared by every decision + tasking write.
+const provenance = {
+  sourceSensor: z.string().max(64).optional(),
+  sensorBand: z.string().max(16).optional(),
+  fusionStep: z.string().max(32).optional(),
+  observedAt: z.string().max(40).optional(), // ISO timestamp
+};
 
 const decisionCore = {
   eventId: z.string().min(1).max(200),
@@ -27,6 +36,7 @@ const decisionCore = {
   modelVersion: z.string().max(64).default("vigilance-triage-1.0.0"),
   policyVersion: z.number().int().optional(),
   mode,
+  ...provenance,
 };
 
 export const autoDecisionInput = z.object({
@@ -38,6 +48,9 @@ export const resolveInput = z.object({
   ...decisionCore,
   outcome: z.enum(["APPROVED", "MODIFIED", "REJECTED"]),
   modifiedAction: z.string().max(500).optional(),
+  // Short-lived step-up token, required when the server-derived level meets the
+  // dual-confirm floor. Verified server-side against the signing key.
+  stepUpToken: z.string().max(2048).optional(),
 });
 
 export const taskingInput = z.object({
@@ -47,6 +60,8 @@ export const taskingInput = z.object({
   triggerLevel: z.number().int().min(1).max(5).optional(),
   triggerLabel: z.string().max(200).optional(),
   mode,
+  clientRequestId: z.string().max(120).optional(),
+  ...provenance,
 });
 
 export const roeInput = z.object({
