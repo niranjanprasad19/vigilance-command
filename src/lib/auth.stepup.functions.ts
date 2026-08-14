@@ -38,19 +38,14 @@ export const verifyMfaEnroll = createServerFn({ method: "POST" })
   })
   .middleware([requireSupabaseAuth])
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.auth.mfa.verify({
-      factorId: data.factorId,
-      challengeId: "", // verify-at-enroll uses the verify helper below
-      code: data.code,
-    });
-    // Supabase requires a challenge for verify; for enrollment confirmation use challenge+verify.
     const ch = await context.supabase.auth.mfa.challenge({ factorId: data.factorId });
+    if (ch.error) return { ok: false as const, reason: ch.error.message };
     const v = await context.supabase.auth.mfa.verify({
       factorId: data.factorId,
-      challengeId: ch.data?.id ?? "",
+      challengeId: ch.data!.id,
       code: data.code,
     });
-    if (error && v.error) return { ok: false as const, reason: (v.error ?? error).message };
+    if (v.error) return { ok: false as const, reason: v.error.message };
     return { ok: true as const };
   });
 
