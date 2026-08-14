@@ -181,6 +181,24 @@ export const resolveDecisionServer = createServerFn({ method: "POST" })
       return { ok: false as const, reason: "L4 authority requires Supervisor or Commander" };
     }
 
+    // Step-up authentication: any action that would FINALISE a dual-confirm
+    // (>= dualConfirmFrom) decision requires a fresh server-signed step-up
+    // token, minted only after a verified TOTP challenge. First-key holds
+    // are allowed WITHOUT a step-up token — the second key is what finalises.
+    const isFinalisingDualKey =
+      requiresDual && data.outcome !== "REJECTED" && !data.firstKeyOnly;
+    if (isFinalisingDualKey) {
+      if (!data.stepUpToken) {
+        return { ok: false as const, reason: "Step-up authentication required for this authority level" };
+      }
+      const { verifyStepUpToken } = await import("./crypto.server");
+      const secret = process.env["AUDIT_STEPUP_KEY"]!;
+      const valid = await verifyStepUpToken(secret, data.stepUpToken, userId);
+      if (!valid) {
+        return { ok: false as const, reason: "Step-up token invalid or expired" };
+      }
+    }
+
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -203,6 +221,10 @@ export const resolveDecisionServer = createServerFn({ method: "POST" })
           status: "PENDING",
           auto_execute: false,
           created_by: context.userId,
+          source_sensor: data.sourceSensor ?? null,
+          sensor_band: data.sensorBand ?? null,
+          fusion_step: data.fusionStep ?? null,
+          observed_at: data.observedAt ?? null,
         },
         { onConflict: "event_id" },
       )
