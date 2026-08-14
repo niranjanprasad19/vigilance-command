@@ -125,12 +125,15 @@ export const recordAutoDecision = createServerFn({ method: "POST" })
         auto_execute: autoExecute,
         created_by: context.userId,
         resolved_at: autoExecute ? new Date().toISOString() : null,
+        source_sensor: data.sourceSensor ?? null,
+        sensor_band: data.sensorBand ?? null,
+        fusion_step: data.fusionStep ?? null,
+        observed_at: data.observedAt ?? null,
       },
-
       { onConflict: "event_id" },
     );
     if (error) throw new Error(error.message);
-    return { ok: true };
+    return { ok: true, level, autoExecute };
   });
 
 /**
