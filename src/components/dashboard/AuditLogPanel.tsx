@@ -3,7 +3,8 @@ import { ShieldCheck, ShieldAlert, Download, FlaskConical, RefreshCw, Lock, File
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { subscribeAudit, type AuditEntry } from "@/lib/audit-log";
-import { listAudit, verifyAuditChain, signAuditRoot, verifyAuditRoots, exportAuditBundle } from "@/lib/ops.functions";
+import { listAudit, verifyAuditChain } from "@/lib/ops.functions";
+import { signAuditRoot, verifyAuditRoots, exportAuditBundle } from "@/lib/audit.merkle.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useOps } from "@/lib/ops-context";
 
