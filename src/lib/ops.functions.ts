@@ -323,7 +323,8 @@ export const recordTasking = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => taskingInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.from("tasking_orders").insert({
+    // Idempotent: a replayed client_request_id returns ok without duplicating.
+    const payload = {
       asset: data.asset,
       directive: data.directive,
       source: data.source,
@@ -331,10 +332,32 @@ export const recordTasking = createServerFn({ method: "POST" })
       trigger_label: data.triggerLabel ?? null,
       mode: data.mode,
       issued_by: context.userId,
-    });
-    if (error) throw new Error(error.message);
+      client_request_id: data.clientRequestId ?? null,
+      source_sensor: data.sourceSensor ?? null,
+      sensor_band: data.sensorBand ?? null,
+    };
+    if (data.clientRequestId) {
+      const { error } = await supabaseAdmin
+        .from("tasking_orders")
+        .upsert(payload, { onConflict: "client_request_id" });
+      // A duplicate replay on the partial unique index is a no-op success.
+      if (error && !/duplicate key/i.test(error.message)) throw new Error(error.message);
+    } else {
+      const { error } = await supabaseAdmin.from("tasking_orders").insert(payload);
+      if (error) throw new Error(error.message);
+    }
     return { ok: true };
   });
+
+/** Liveness probe for the store-and-forward outbox: confirms the server is
+ *  reachable and the bearer is valid so the client can reconcile its queue. */
+export const ping = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => ({
+    ok: true,
+    serverTime: Date.now(),
+    userId: context.userId,
+  }));
 
 export const getActiveRoe = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
