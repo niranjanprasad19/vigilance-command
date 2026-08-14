@@ -291,7 +291,7 @@ export function getBus(): TelemetryBus {
 export function dispatchTasking(
   asset: string,
   directive: string,
-  meta?: { source?: TaskingOrder["source"]; triggerLevel?: TaskingOrder["triggerLevel"]; triggerLabel?: string },
+  meta?: { source?: TaskingOrder["source"]; triggerLevel?: TaskingOrder["triggerLevel"]; triggerLabel?: string; sourceSensor?: string; sensorBand?: string },
 ) {
   const bus = getBus();
   const id = `task-${Date.now()}-${Math.floor(Math.random() * 999)}`;
@@ -304,6 +304,8 @@ export function dispatchTasking(
     source: meta?.source ?? "MANUAL",
     triggerLevel: meta?.triggerLevel,
     triggerLabel: meta?.triggerLabel,
+    sourceSensor: meta?.sourceSensor,
+    sensorBand: meta?.sensorBand,
   };
   bus.emit("tasking:update", order);
   const stages: TaskingOrder["status"][] = ["ACK", "ENROUTE", "ON-STATION", "COMPLETE"];
