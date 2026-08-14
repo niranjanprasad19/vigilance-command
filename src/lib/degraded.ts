@@ -18,6 +18,10 @@ const active = new Set<DegradedMode>();
 const intervals = new Map<DegradedMode, ReturnType<typeof setInterval>>();
 const subscribers = new Set<(s: ReadonlySet<DegradedMode>) => void>();
 
+// The outbox consults this to decide whether to flush: while comms-loss is
+// simulated-down the queue holds; the moment it clears, the queue drains.
+setReachabilityChecker(() => !active.has("comms-loss"));
+
 export function getActiveDegraded(): ReadonlySet<DegradedMode> {
   return active;
 }
@@ -41,6 +45,7 @@ export function setDegraded(m: DegradedMode, on: boolean) {
     if (i) clearInterval(i);
     intervals.delete(m);
     if (m === "sensor-drop") restoreFeeds();
+    if (m === "comms-loss") void flushOutbox(); // drain the buffered queue
   }
   void appendAudit("DEGRADED_TOGGLE", { degraded_mode: m, on });
   notify();
