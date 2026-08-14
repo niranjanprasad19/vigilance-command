@@ -13,8 +13,8 @@ export const getMfaStatus = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase.auth.mfa.listFactors();
     if (error) return { enrolled: false, factorId: null, reason: error.message };
-    const totp = (data?.totp ?? []).find((f) => f.factorType === "totp");
-    return { enrolled: !!totp?.verified, factorId: totp?.id ?? null, reason: null };
+    const totp = (data?.totp ?? []).find((f) => (f as { factor_type?: string }).factor_type === "totp");
+    return { enrolled: !!(totp as { verified?: boolean } | undefined)?.verified, factorId: totp?.id ?? null, reason: null };
   });
 
 export const enrollMfa = createServerFn({ method: "POST" })
