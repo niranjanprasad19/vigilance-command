@@ -79,6 +79,7 @@ export async function resolveDecision(
   id: string,
   outcome: "APPROVED" | "MODIFIED" | "REJECTED",
   modifiedAction?: string,
+  stepUpToken?: string,
 ): Promise<ResolveResult> {
   const cur = pending.get(id);
   if (!cur) return { ok: false, reason: "Decision is no longer pending" };
@@ -102,6 +103,11 @@ export async function resolveDecision(
         mode: getOpsMode(),
         outcome,
         modifiedAction: outcome === "MODIFIED" ? modifiedAction : undefined,
+        stepUpToken,
+        sourceSensor: d.provenance?.sensorId,
+        sensorBand: d.provenance?.band,
+        fusionStep: d.provenance?.fusionStep,
+        observedAt: d.provenance?.observedAt,
       },
     });
   } catch (e) {
@@ -130,6 +136,8 @@ export async function resolveDecision(
       source: "OPERATOR",
       triggerLevel: finalDecision.level,
       triggerLabel: finalDecision.event.label,
+      sourceSensor: d.provenance?.sensorId,
+      sensorBand: d.provenance?.band,
     });
   }
   getBus().emit("decision:resolved", finalDecision);
