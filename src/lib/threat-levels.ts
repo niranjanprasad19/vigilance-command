@@ -75,6 +75,7 @@ export function classify(event: ThreatEvent, entity?: Entity): Decision {
     autoExecute,
     requiresDualConfirm: level >= policy.dualConfirmFrom,
     status: autoExecute ? "AUTO-EXECUTED" : "PENDING",
+    provenance: event.provenance,
   };
 }
 
