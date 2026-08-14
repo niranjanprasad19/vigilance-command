@@ -19,6 +19,7 @@ export type Database = {
           actor_id: string | null
           actor_role: Database["public"]["Enums"]["app_role"] | null
           classification: Database["public"]["Enums"]["classification"]
+          client_request_id: string | null
           hash: string
           kind: string
           mode: Database["public"]["Enums"]["ops_mode"]
@@ -31,6 +32,7 @@ export type Database = {
           actor_id?: string | null
           actor_role?: Database["public"]["Enums"]["app_role"] | null
           classification?: Database["public"]["Enums"]["classification"]
+          client_request_id?: string | null
           hash: string
           kind: string
           mode?: Database["public"]["Enums"]["ops_mode"]
@@ -43,6 +45,7 @@ export type Database = {
           actor_id?: string | null
           actor_role?: Database["public"]["Enums"]["app_role"] | null
           classification?: Database["public"]["Enums"]["classification"]
+          client_request_id?: string | null
           hash?: string
           kind?: string
           mode?: Database["public"]["Enums"]["ops_mode"]
@@ -50,6 +53,42 @@ export type Database = {
           prev_hash?: string
           seq?: never
           ts?: string
+        }
+        Relationships: []
+      }
+      audit_roots: {
+        Row: {
+          entry_count: number
+          id: string
+          key_id: string
+          prev_root_hash: string | null
+          root_hash: string
+          signature: string
+          signed_at: string
+          window_end_seq: number
+          window_start_seq: number
+        }
+        Insert: {
+          entry_count: number
+          id?: string
+          key_id: string
+          prev_root_hash?: string | null
+          root_hash: string
+          signature: string
+          signed_at?: string
+          window_end_seq: number
+          window_start_seq: number
+        }
+        Update: {
+          entry_count?: number
+          id?: string
+          key_id?: string
+          prev_root_hash?: string | null
+          root_hash?: string
+          signature?: string
+          signed_at?: string
+          window_end_seq?: number
+          window_start_seq?: number
         }
         Relationships: []
       }
@@ -102,16 +141,20 @@ export type Database = {
           entity_id: string | null
           entity_label: string | null
           event_id: string
+          fusion_step: string | null
           id: string
           level: number
           mode: Database["public"]["Enums"]["ops_mode"]
           model_version: string
           modified_action: string | null
+          observed_at: string | null
           policy_version: number | null
           rationale: string
           resolved_at: string | null
           score: number | null
+          sensor_band: string | null
           severity: string | null
+          source_sensor: string | null
           status: string
         }
         Insert: {
@@ -124,16 +167,20 @@ export type Database = {
           entity_id?: string | null
           entity_label?: string | null
           event_id: string
+          fusion_step?: string | null
           id?: string
           level: number
           mode?: Database["public"]["Enums"]["ops_mode"]
           model_version?: string
           modified_action?: string | null
+          observed_at?: string | null
           policy_version?: number | null
           rationale: string
           resolved_at?: string | null
           score?: number | null
+          sensor_band?: string | null
           severity?: string | null
+          source_sensor?: string | null
           status?: string
         }
         Update: {
@@ -146,16 +193,20 @@ export type Database = {
           entity_id?: string | null
           entity_label?: string | null
           event_id?: string
+          fusion_step?: string | null
           id?: string
           level?: number
           mode?: Database["public"]["Enums"]["ops_mode"]
           model_version?: string
           modified_action?: string | null
+          observed_at?: string | null
           policy_version?: number | null
           rationale?: string
           resolved_at?: string | null
           score?: number | null
+          sensor_band?: string | null
           severity?: string | null
+          source_sensor?: string | null
           status?: string
         }
         Relationships: []
@@ -224,13 +275,16 @@ export type Database = {
         Row: {
           asset: string
           classification: Database["public"]["Enums"]["classification"]
+          client_request_id: string | null
           created_at: string
           decision_id: string | null
           directive: string
           id: string
           issued_by: string | null
           mode: Database["public"]["Enums"]["ops_mode"]
+          sensor_band: string | null
           source: string
+          source_sensor: string | null
           status: string
           trigger_label: string | null
           trigger_level: number | null
@@ -238,13 +292,16 @@ export type Database = {
         Insert: {
           asset: string
           classification?: Database["public"]["Enums"]["classification"]
+          client_request_id?: string | null
           created_at?: string
           decision_id?: string | null
           directive: string
           id?: string
           issued_by?: string | null
           mode?: Database["public"]["Enums"]["ops_mode"]
+          sensor_band?: string | null
           source: string
+          source_sensor?: string | null
           status?: string
           trigger_label?: string | null
           trigger_level?: number | null
@@ -252,13 +309,16 @@ export type Database = {
         Update: {
           asset?: string
           classification?: Database["public"]["Enums"]["classification"]
+          client_request_id?: string | null
           created_at?: string
           decision_id?: string | null
           directive?: string
           id?: string
           issued_by?: string | null
           mode?: Database["public"]["Enums"]["ops_mode"]
+          sensor_band?: string | null
           source?: string
+          source_sensor?: string | null
           status?: string
           trigger_label?: string | null
           trigger_level?: number | null
@@ -302,6 +362,7 @@ export type Database = {
       append_audit: {
         Args: {
           _classification?: Database["public"]["Enums"]["classification"]
+          _idempotency_key?: string
           _kind: string
           _mode?: Database["public"]["Enums"]["ops_mode"]
           _payload?: Json
