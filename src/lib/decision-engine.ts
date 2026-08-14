@@ -27,6 +27,8 @@ function autoSideEffect(d: Decision) {
       source: "AI-AUTO",
       triggerLevel: d.level,
       triggerLabel: d.event.label,
+      sourceSensor: d.provenance?.sensorId,
+      sensorBand: d.provenance?.band,
     });
   }
 }
@@ -77,6 +79,7 @@ export async function resolveDecision(
   id: string,
   outcome: "APPROVED" | "MODIFIED" | "REJECTED",
   modifiedAction?: string,
+  stepUpToken?: string,
 ): Promise<ResolveResult> {
   const cur = pending.get(id);
   if (!cur) return { ok: false, reason: "Decision is no longer pending" };
@@ -100,6 +103,11 @@ export async function resolveDecision(
         mode: getOpsMode(),
         outcome,
         modifiedAction: outcome === "MODIFIED" ? modifiedAction : undefined,
+        stepUpToken,
+        sourceSensor: d.provenance?.sensorId,
+        sensorBand: d.provenance?.band,
+        fusionStep: d.provenance?.fusionStep,
+        observedAt: d.provenance?.observedAt,
       },
     });
   } catch (e) {
@@ -128,6 +136,8 @@ export async function resolveDecision(
       source: "OPERATOR",
       triggerLevel: finalDecision.level,
       triggerLabel: finalDecision.event.label,
+      sourceSensor: d.provenance?.sensorId,
+      sensorBand: d.provenance?.band,
     });
   }
   getBus().emit("decision:resolved", finalDecision);
@@ -137,11 +147,11 @@ export async function resolveDecision(
 // Demo injectors — fire scripted threats at desired levels.
 export type ScenarioKey = "rf" | "drone" | "vessel" | "incursion";
 
-const SCENARIOS: Record<ScenarioKey, { entityId: string; label: string; severity: ThreatEvent["severity"]; confidence: number; targetLevel: ThreatLevel }> = {
-  rf: { entityId: "sig:RF-2.4G", label: "RF burst intercept · band 2.4GHz", severity: "WATCH", confidence: 0.72, targetLevel: 2 },
-  incursion: { entityId: "trk:UNK-118", label: "Unidentified vehicle crossing tripwire", severity: "WARN", confidence: 0.78, targetLevel: 3 },
-  drone: { entityId: "trk:GHOST-441", label: "Hostile drone incursion · sector ALPHA-7", severity: "WARN", confidence: 0.86, targetLevel: 4 },
-  vessel: { entityId: "trk:VESSEL-5", label: "Vessel intrusion · weapons signature", severity: "CRITICAL", confidence: 0.93, targetLevel: 5 },
+const SCENARIOS: Record<ScenarioKey, { entityId: string; label: string; severity: ThreatEvent["severity"]; confidence: number; targetLevel: ThreatLevel; sensorId: string; band: string; fusionStep: string }> = {
+  rf:        { entityId: "sig:RF-2.4G",  label: "RF burst intercept · band 2.4GHz", severity: "WATCH",    confidence: 0.72, targetLevel: 2, sensorId: "feed:RF-C3",  band: "RF",       fusionStep: "sigint-geo" },
+  incursion:  { entityId: "trk:UNK-118",  label: "Unidentified vehicle crossing tripwire", severity: "WARN", confidence: 0.78, targetLevel: 3, sensorId: "feed:EO-N1",  band: "EO",       fusionStep: "eo-radar-fuse" },
+  drone:      { entityId: "trk:GHOST-441", label: "Hostile drone incursion · sector ALPHA-7", severity: "WARN", confidence: 0.86, targetLevel: 4, sensorId: "feed:IR-N2",  band: "IR",       fusionStep: "ir-radar-fuse" },
+  vessel:     { entityId: "trk:VESSEL-5", label: "Vessel intrusion · weapons signature", severity: "CRITICAL", confidence: 0.93, targetLevel: 5, sensorId: "feed:SAR-S1", band: "SAR",      fusionStep: "sar-ais-fuse" },
 };
 
 export function injectScenario(key: ScenarioKey) {
@@ -160,6 +170,12 @@ export function injectScenario(key: ScenarioKey) {
     severity: s.severity,
     confidence: s.confidence,
     predicted: false,
+    provenance: {
+      sensorId: s.sensorId,
+      band: s.band,
+      fusionStep: s.fusionStep,
+      observedAt: new Date().toISOString(),
+    },
   });
   if (ent && restore !== undefined) {
     setTimeout(() => { ent.threat = restore; }, 250);

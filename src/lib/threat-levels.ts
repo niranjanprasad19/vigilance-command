@@ -1,7 +1,7 @@
 // Deterministic 5-level threat classifier.
 // L1-L3 → AI auto-executes. L4-L5 → human-in-the-loop required.
 
-import type { Entity, ThreatEvent } from "./telemetry";
+import type { Entity, Provenance, ThreatEvent } from "./telemetry";
 import { evaluateLevel, fusionScore, getActiveRoePolicy } from "./roe";
 
 export type ThreatLevel = 1 | 2 | 3 | 4 | 5;
@@ -22,6 +22,7 @@ export type Decision = {
   resolvedBy?: string;
   resolvedTs?: number;
   modifiedAction?: string;
+  provenance?: Provenance;
 };
 
 export const LEVEL_META: Record<
@@ -74,6 +75,7 @@ export function classify(event: ThreatEvent, entity?: Entity): Decision {
     autoExecute,
     requiresDualConfirm: level >= policy.dualConfirmFrom,
     status: autoExecute ? "AUTO-EXECUTED" : "PENDING",
+    provenance: event.provenance,
   };
 }
 

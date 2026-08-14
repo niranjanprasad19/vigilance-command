@@ -50,6 +50,11 @@ export function DecisionLog() {
               <div className="font-mono text-[10px] text-foreground/90 leading-snug truncate">
                 {e.modifiedAction ?? e.action}
               </div>
+              {e.provenance && (
+                <div className="font-mono text-[8px] text-cyan/70 truncate" title={`${e.provenance.sensorId} · ${e.provenance.band} · ${e.provenance.fusionStep}`}>
+                  {e.provenance.sensorId} · {e.provenance.band} · {e.provenance.fusionStep}
+                </div>
+              )}
             </div>
           );
         })}

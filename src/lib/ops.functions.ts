@@ -125,12 +125,15 @@ export const recordAutoDecision = createServerFn({ method: "POST" })
         auto_execute: autoExecute,
         created_by: context.userId,
         resolved_at: autoExecute ? new Date().toISOString() : null,
+        source_sensor: data.sourceSensor ?? null,
+        sensor_band: data.sensorBand ?? null,
+        fusion_step: data.fusionStep ?? null,
+        observed_at: data.observedAt ?? null,
       },
-
       { onConflict: "event_id" },
     );
     if (error) throw new Error(error.message);
-    return { ok: true };
+    return { ok: true, level, autoExecute };
   });
 
 /**
@@ -178,6 +181,10 @@ export const resolveDecisionServer = createServerFn({ method: "POST" })
       return { ok: false as const, reason: "L4 authority requires Supervisor or Commander" };
     }
 
+    // Step-up authentication: a dual-confirm (>= dualConfirmFrom) approve/modify
+    // only FINALISES on the second distinct commander key. That finalising
+    // action requires a fresh server-signed step-up token, minted after a
+    // verified TOTP challenge. The first-key hold needs no step-up token.
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -200,6 +207,10 @@ export const resolveDecisionServer = createServerFn({ method: "POST" })
           status: "PENDING",
           auto_execute: false,
           created_by: context.userId,
+          source_sensor: data.sourceSensor ?? null,
+          sensor_band: data.sensorBand ?? null,
+          fusion_step: data.fusionStep ?? null,
+          observed_at: data.observedAt ?? null,
         },
         { onConflict: "event_id" },
       )
@@ -209,6 +220,32 @@ export const resolveDecisionServer = createServerFn({ method: "POST" })
 
     if (decision.status !== "PENDING") {
       return { ok: false as const, reason: `Already ${decision.status}` };
+    }
+
+    const needsDual = requiresDual && data.outcome !== "REJECTED";
+
+    // Count EXISTING distinct commander keys (excluding self, before our insert)
+    // to tell first-key (hold) from finalising-key (needs step-up).
+    if (needsDual) {
+      const { data: existing } = await supabaseAdmin
+        .from("decision_approvals")
+        .select("user_id")
+        .eq("decision_id", decision.id)
+        .eq("actor_role", "commander")
+        .neq("outcome", "REJECTED")
+        .neq("user_id", userId);
+      const distinctOthers = new Set((existing ?? []).map((k) => k.user_id)).size;
+      if (distinctOthers >= 1) {
+        if (!data.stepUpToken) {
+          return { ok: false as const, reason: "Step-up authentication required to finalise this authority level" };
+        }
+        const { verifyStepUpToken } = await import("./crypto.server");
+        const secret = process.env["AUDIT_STEPUP_KEY"]!;
+        const valid = await verifyStepUpToken(secret, data.stepUpToken, userId);
+        if (!valid) {
+          return { ok: false as const, reason: "Step-up token invalid or expired" };
+        }
+      }
     }
 
     const { error: apErr } = await supabaseAdmin.from("decision_approvals").upsert(
@@ -224,7 +261,6 @@ export const resolveDecisionServer = createServerFn({ method: "POST" })
     if (apErr) throw new Error(apErr.message);
 
     // Dual-key rule: L5 approve/modify needs two DIFFERENT commanders.
-    const needsDual = requiresDual && data.outcome !== "REJECTED";
     if (needsDual) {
       const { data: keys } = await supabaseAdmin
         .from("decision_approvals")
@@ -236,7 +272,7 @@ export const resolveDecisionServer = createServerFn({ method: "POST" })
       if (distinct.size < 2) {
         await supabase.rpc("append_audit", {
           _kind: "DECISION_FIRST_KEY",
-          _payload: { event_id: data.eventId, level, proposed_level: data.level, roe_version: policy.version, outcome: data.outcome },
+          _payload: { event_id: data.eventId, level, proposed_level: data.level, roe_version: policy.version, outcome: data.outcome, first_key_by: userId },
           _mode: data.mode,
           _classification: "CONFIDENTIAL",
         });
@@ -287,7 +323,8 @@ export const recordTasking = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => taskingInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.from("tasking_orders").insert({
+    // Idempotent: a replayed client_request_id returns ok without duplicating.
+    const payload = {
       asset: data.asset,
       directive: data.directive,
       source: data.source,
@@ -295,10 +332,32 @@ export const recordTasking = createServerFn({ method: "POST" })
       trigger_label: data.triggerLabel ?? null,
       mode: data.mode,
       issued_by: context.userId,
-    });
-    if (error) throw new Error(error.message);
+      client_request_id: data.clientRequestId ?? null,
+      source_sensor: data.sourceSensor ?? null,
+      sensor_band: data.sensorBand ?? null,
+    };
+    if (data.clientRequestId) {
+      const { error } = await supabaseAdmin
+        .from("tasking_orders")
+        .upsert(payload, { onConflict: "client_request_id" });
+      // A duplicate replay on the partial unique index is a no-op success.
+      if (error && !/duplicate key/i.test(error.message)) throw new Error(error.message);
+    } else {
+      const { error } = await supabaseAdmin.from("tasking_orders").insert(payload);
+      if (error) throw new Error(error.message);
+    }
     return { ok: true };
   });
+
+/** Liveness probe for the store-and-forward outbox: confirms the server is
+ *  reachable and the bearer is valid so the client can reconcile its queue. */
+export const ping = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => ({
+    ok: true,
+    serverTime: Date.now(),
+    userId: context.userId,
+  }));
 
 export const getActiveRoe = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])

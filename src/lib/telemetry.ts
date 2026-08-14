@@ -40,6 +40,16 @@ export type SensorFeed = {
   detections: number;
 };
 
+/** Data lineage — which sensor, band, fusion step and observation time
+ *  produced a track. Attached to threat events and propagated into decisions
+ *  and tasking so every action is traceable to its source observation. */
+export type Provenance = {
+  sensorId: string;
+  band: string;
+  fusionStep?: string;
+  observedAt?: string; // ISO timestamp
+};
+
 export type ThreatEvent = {
   id: string;
   ts: number; // unix ms (relative to t0)
@@ -48,6 +58,7 @@ export type ThreatEvent = {
   severity: "INFO" | "WATCH" | "WARN" | "CRITICAL";
   confidence: number;
   predicted: boolean;
+  provenance?: Provenance;
 };
 
 export type GhostTrack = {
@@ -69,6 +80,8 @@ export type TaskingOrder = {
   source?: "AI-AUTO" | "OPERATOR" | "MANUAL";
   triggerLevel?: 1 | 2 | 3 | 4 | 5;
   triggerLabel?: string;
+  sourceSensor?: string;
+  sensorBand?: string;
 };
 
 import type { Decision } from "./threat-levels";
@@ -278,7 +291,7 @@ export function getBus(): TelemetryBus {
 export function dispatchTasking(
   asset: string,
   directive: string,
-  meta?: { source?: TaskingOrder["source"]; triggerLevel?: TaskingOrder["triggerLevel"]; triggerLabel?: string },
+  meta?: { source?: TaskingOrder["source"]; triggerLevel?: TaskingOrder["triggerLevel"]; triggerLabel?: string; sourceSensor?: string; sensorBand?: string },
 ) {
   const bus = getBus();
   const id = `task-${Date.now()}-${Math.floor(Math.random() * 999)}`;
@@ -291,6 +304,8 @@ export function dispatchTasking(
     source: meta?.source ?? "MANUAL",
     triggerLevel: meta?.triggerLevel,
     triggerLabel: meta?.triggerLabel,
+    sourceSensor: meta?.sourceSensor,
+    sensorBand: meta?.sensorBand,
   };
   bus.emit("tasking:update", order);
   const stages: TaskingOrder["status"][] = ["ACK", "ENROUTE", "ON-STATION", "COMPLETE"];
