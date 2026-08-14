@@ -3,6 +3,7 @@
 
 import { getBus, scenario, type SensorFeed } from "./telemetry";
 import { appendAudit } from "./audit-log";
+import { setReachabilityChecker, flushOutbox } from "./outbox";
 
 export type DegradedMode = "sensor-drop" | "comms-loss" | "gps-jam" | "ai-degraded";
 
