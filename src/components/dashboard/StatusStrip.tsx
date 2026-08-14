@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { getBus } from "@/lib/telemetry";
-import { Activity, Radio, Zap, AlertTriangle } from "lucide-react";
+import { Activity, Radio, Zap, AlertTriangle, CloudOff } from "lucide-react";
+import { subscribeOutbox, type OutboxSnapshot } from "@/lib/outbox";
 
 type Sys = { uplink: number; latencyMs: number; nodes: number; alerts: number };
 
@@ -10,6 +11,7 @@ export function StatusStrip() {
   const [time, setTime] = useState(() => new Date().toISOString().substring(11, 19));
   const latHistory = useRef<number[]>([]);
   const [tick, setTick] = useState(0);
+  const [outbox, setOutbox] = useState<OutboxSnapshot | null>(null);
 
   useEffect(() => {
     const bus = getBus();
@@ -19,15 +21,20 @@ export function StatusStrip() {
       setTick((x) => x + 1);
     });
     const i = setInterval(() => setTime(new Date().toISOString().substring(11, 19)), 1000);
+    const offOutbox = subscribeOutbox(setOutbox);
     return () => {
       off();
       clearInterval(i);
+      offOutbox();
     };
   }, []);
 
   const condition = s.alerts > 4 ? "REDCON-1" : s.alerts > 1 ? "WATCHCON" : "STEADY";
   const condColor =
     condition === "REDCON-1" ? "text-destructive border-destructive" : condition === "WATCHCON" ? "text-warning border-warning" : "text-cyan border-cyan/40";
+
+  const outboxQueued = (outbox?.pending ?? 0) > 0;
+  const outboxOffline = outbox != null && !outbox.online;
 
   return (
     <header className="relative border-b border-border bg-card/90 backdrop-blur-md">
@@ -47,6 +54,18 @@ export function StatusStrip() {
         </div>
 
         <div className="flex items-center gap-3 md:gap-5 font-mono text-[10px]">
+          {outboxQueued && (
+            <div
+              className={`flex items-center gap-1.5 px-2 py-1 border ${
+                outboxOffline ? "border-destructive text-destructive" : "border-warning text-warning"
+              } ${outboxOffline ? "pulse-dot" : ""}`}
+              title={outboxOffline ? "Comms loss — outbox holding, will drain on restore" : `Outbox reconciling — ${outbox?.pending} queued`}
+            >
+              <CloudOff className="w-3 h-3" />
+              <span className="uppercase tracking-wider text-[9px]">OUTBOX</span>
+              <span className="tabular-nums">{outbox?.pending}</span>
+            </div>
+          )}
           <UplinkBars value={s.uplink} />
           <LatencyChip value={s.latencyMs} history={latHistory.current} />
           <Stat icon={<Radio className="w-3 h-3" />} label="NODES" value={s.nodes} tone="ok" />
