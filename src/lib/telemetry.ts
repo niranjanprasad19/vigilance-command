@@ -80,6 +80,8 @@ export type TaskingOrder = {
   source?: "AI-AUTO" | "OPERATOR" | "MANUAL";
   triggerLevel?: 1 | 2 | 3 | 4 | 5;
   triggerLabel?: string;
+  sourceSensor?: string;
+  sensorBand?: string;
 };
 
 import type { Decision } from "./threat-levels";
