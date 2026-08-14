@@ -27,6 +27,8 @@ function autoSideEffect(d: Decision) {
       source: "AI-AUTO",
       triggerLevel: d.level,
       triggerLabel: d.event.label,
+      sourceSensor: d.provenance?.sensorId,
+      sensorBand: d.provenance?.band,
     });
   }
 }
