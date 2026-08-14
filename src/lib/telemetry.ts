@@ -40,6 +40,16 @@ export type SensorFeed = {
   detections: number;
 };
 
+/** Data lineage — which sensor, band, fusion step and observation time
+ *  produced a track. Attached to threat events and propagated into decisions
+ *  and tasking so every action is traceable to its source observation. */
+export type Provenance = {
+  sensorId: string;
+  band: string;
+  fusionStep?: string;
+  observedAt?: string; // ISO timestamp
+};
+
 export type ThreatEvent = {
   id: string;
   ts: number; // unix ms (relative to t0)
@@ -48,6 +58,7 @@ export type ThreatEvent = {
   severity: "INFO" | "WATCH" | "WARN" | "CRITICAL";
   confidence: number;
   predicted: boolean;
+  provenance?: Provenance;
 };
 
 export type GhostTrack = {
