@@ -1,0 +1,4 @@
+- [ ] Restore successful production build and publishing readiness.
+- [ ] Simplify command console to a single zoomable detection map, with spaced left navigation and no redundant radar/graph views.
+- [ ] Replace simulated video and telemetry displays with real-source inputs and explicit feed provenance; do not present absent sources as live.
+- [ ] Verify desktop/mobile layout and source connection states.
